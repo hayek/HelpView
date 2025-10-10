@@ -1,5 +1,7 @@
 import Foundation
+#if canImport(FoundationModels)
 import FoundationModels
+#endif
 
 /// Represents a single FAQ item
 struct FAQ: Codable, Identifiable {
@@ -53,6 +55,8 @@ struct FAQCollection: Codable {
 
 // MARK: - AI Response Model
 
+#if canImport(FoundationModels)
+@available(iOS 26.0, macOS 26.0, *)
 @Generable
 struct HelpResponse {
     @Guide(description: "Answer ONLY using the FAQ information provided. If the question is not covered in the FAQs, refuse politely and suggest relevant FAQ topics. Do NOT use external knowledge. Do NOT answer general questions.")
@@ -61,3 +65,4 @@ struct HelpResponse {
     @Guide(description: "List of FAQ titles that are most relevant to the user's question. Include 2-4 related FAQs from the provided FAQ list.")
     var relatedFAQs: [String]
 }
+#endif

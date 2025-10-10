@@ -22,14 +22,27 @@ struct FAQListView: View {
                     }
                 #endif
                 #if os(macOS)
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark")
+                Group {
+                    if #available(macOS 26.0, *) {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "xmark")
+                        }
+                        .padding()
+                        .buttonBorderShape(.circle)
+                        .buttonStyle(.glass)
+                    } else {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "xmark")
+                        }
+                        .padding()
+                        .buttonBorderShape(.circle)
+                        .buttonStyle(.bordered)
+                    }
                 }
-                .padding()
-                .buttonBorderShape(.circle)
-                .buttonStyle(.glass)
                 #endif
             }
         }

@@ -1,0 +1,3 @@
+module HelpView {
+    header "/Users/ahayek/Developer/HelpView/.build/arm64-apple-macosx/debug/HelpView.build/include/HelpView-Swift.h"
+}

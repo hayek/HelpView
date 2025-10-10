@@ -25,7 +25,9 @@ public struct HelpContentView: View {
             ToolbarItem(placement: .automatic) {
                 SearchField(viewModel: viewModel)
             }
-            ToolbarSpacer()
+            if #available(iOS 26.0, macOS 26.0, *) {
+                ToolbarSpacer()
+            }
         }
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
