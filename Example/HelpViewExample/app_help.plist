@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>faqs</key>
+	<array>
+		<dict>
+			<key>details</key>
+			<string>To create a new account:
+
+1. Tap the **Sign Up** button on the welcome screen
+2. Enter your email address
+3. Choose a secure password
+4. Verify your email through the link we send you
+5. Complete your profile setup
+
+Your account will be ready to use immediately after verification.</string>
+			<key>title</key>
+			<string>How do I create a new account?</string>
+			<key>topic</key>
+			<string>Getting Started</string>
+		</dict>
+		<dict>
+			<key>details</key>
+			<string>If you've forgotten your password:
+
+1. Tap **Forgot Password** on the login screen
+2. Enter your email address
+3. Check your email for a reset link
+4. Click the link and enter your new password
+5. Confirm your new password
+
+For security reasons, password reset links expire after 24 hours.</string>
+			<key>title</key>
+			<string>How do I reset my password?</string>
+			<key>topic</key>
+			<string>Account Management</string>
+		</dict>
+		<dict>
+			<key>details</key>
+			<string>Yes! The app supports **offline mode** with the following features:
+
+- Access previously synced content
+- Create and edit items locally
+- View your saved favorites
+- Changes sync automatically when you reconnect
+
+*Note: Some features like real-time collaboration require an internet connection.*</string>
+			<key>title</key>
+			<string>Can I use the app offline?</string>
+			<key>topic</key>
+			<string>Features</string>
+		</dict>
+		<dict>
+			<key>details</key>
+			<string>Dark mode can be enabled in two ways:
+
+**Automatic (Recommended):**
+- Go to **Settings** → **Appearance**
+- Select **System** to match your device settings
+
+**Manual:**
+- Go to **Settings** → **Appearance**
+- Choose **Light** or **Dark**
+
+The app will remember your preference across sessions.</string>
+			<key>title</key>
+			<string>How do I enable dark mode?</string>
+			<key>topic</key>
+			<string>Settings</string>
+		</dict>
+		<dict>
+			<key>details</key>
+			<string>We take your privacy and security seriously:
+
+✓ **End-to-end encryption** for sensitive data
+✓ **Secure cloud backup** with AES-256 encryption
+✓ **Two-factor authentication** available
+✓ **Zero-knowledge architecture** - we can't access your encrypted data
+✓ **Regular security audits** by independent firms
+
+You can review our full security practices in Settings → Privacy &amp; Security.</string>
+			<key>title</key>
+			<string>Is my data secure?</string>
+			<key>topic</key>
+			<string>Privacy &amp; Security</string>
+		</dict>
+		<dict>
+			<key>details</key>
+			<string>To export your data:
+
+1. Go to **Settings** → **Data Management**
+2. Tap **Export Data**
+3. Choose your preferred format:
+   - **JSON** - Full data export
+   - **CSV** - Spreadsheet compatible
+   - **PDF** - Human-readable format
+4. Select what to include (documents, settings, etc.)
+5. Tap **Export** and choose where to save
+
+Exports are generated immediately and include all your content.</string>
+			<key>title</key>
+			<string>How do I export my data?</string>
+			<key>topic</key>
+			<string>Account Management</string>
+		</dict>
+		<dict>
+			<key>details</key>
+			<string>The app is available on:
+
+**iOS:** Requires iOS 26.0 or later
+- iPhone
+- iPad
+
+**macOS:** Requires macOS 26.0 or later
+- Apple Silicon and Intel Macs
+
+All your data syncs seamlessly across all your devices via iCloud.</string>
+			<key>title</key>
+			<string>What devices are supported?</string>
+			<key>topic</key>
+			<string>Getting Started</string>
+		</dict>
+		<dict>
+			<key>details</key>
+			<string>We're here to help! You can reach us through:
+
+📧 **Email:** support@example.com (24-48 hour response time)
+💬 **In-app chat:** Tap the chat icon in Settings
+🐦 **Twitter:** @exampleapp
+📖 **Help Center:** help.example.com
+
+For urgent issues, use the in-app chat for the fastest response.</string>
+			<key>title</key>
+			<string>How do I contact support?</string>
+			<key>topic</key>
+			<string></string>
+		</dict>
+		<dict>
+			<key>details</key>
+			<string>Yes! Sharing is easy:
+
+**Individual Items:**
+1. Tap the **Share** button on any item
+2. Choose how to share (link, email, message)
+3. Set permissions (view only or edit)
+
+**Collections:**
+1. Open a collection
+2. Tap the three dots menu
+3. Select **Share Collection**
+4. Choose recipients and permissions
+
+You can revoke access anytime from the sharing settings.</string>
+			<key>title</key>
+			<string>Can I share content with others?</string>
+			<key>topic</key>
+			<string>Features</string>
+		</dict>
+		<dict>
+			<key>details</key>
+			<string>We offer flexible plans:
+
+**Free:**
+- Up to 100 items
+- Basic features
+- 1 GB storage
+
+**Pro** ($4.99/month or $49.99/year):
+- Unlimited items
+- Advanced features
+- 100 GB storage
+- Priority support
+- Offline mode
+
+**Family** ($9.99/month or $99.99/year):
+- Everything in Pro
+- Up to 6 family members
+- 500 GB shared storage
+- Family sharing features
+
+All plans include a **14-day free trial**!</string>
+			<key>title</key>
+			<string>What are the subscription options?</string>
+			<key>topic</key>
+			<string>Account Management</string>
+		</dict>
+	</array>
+</dict>
+</plist>
