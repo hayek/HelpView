@@ -159,14 +159,14 @@ struct RelatedFAQCard: View {
                 }
             } label: {
                 HStack {
+                    Image(systemName: viewModel.isFAQExpanded(faq.id) ? "chevron.up" : "chevron.down")
+                        .foregroundStyle(.primary)
+                        .imageScale(.small)
                     Text(faq.title)
                         .font(.body.weight(.bold))
                         .foregroundStyle(.primary)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                    Image(systemName: viewModel.isFAQExpanded(faq.id) ? "chevron.up" : "chevron.down")
-                        .foregroundStyle(.primary)
-                        .imageScale(.small)
                 }
                 .padding()
                 .contentShape(Rectangle())
@@ -184,6 +184,7 @@ struct RelatedFAQCard: View {
             }
 
             Divider()
+                .padding(.leading)
         }
     }
 }
@@ -238,14 +239,14 @@ struct FAQRow: View {
                 }
             } label: {
                 HStack {
+                    Image(systemName: viewModel.isFAQExpanded(faq.id) ? "chevron.up" : "chevron.down")
+                        .foregroundStyle(.primary)
+                        .imageScale(.small)
                     Text(faq.title)
                         .font(.headline)
                         .foregroundStyle(.primary)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                    Image(systemName: viewModel.isFAQExpanded(faq.id) ? "chevron.up" : "chevron.down")
-                        .foregroundStyle(.primary)
-                        .imageScale(.small)
                 }
                 .padding()
                 .contentShape(Rectangle())

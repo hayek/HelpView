@@ -13,6 +13,7 @@ public struct HelpContentView: View {
     }
 
     public var body: some View {
+        #if os(iOS)
         VStack(spacing: 0) {
             // AI Response or FAQ List
             if !viewModel.aiResponse.isEmpty {
@@ -29,12 +30,29 @@ public struct HelpContentView: View {
                 ToolbarSpacer()
             }
         }
-        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
-        #endif
         .onAppear {
             let loadedFAQs = FAQLoader.load(named: filename)
             viewModel.configure(with: loadedFAQs)
         }
+        #else
+        VStack(spacing: 0) {
+            // AI Response or FAQ List
+            if !viewModel.aiResponse.isEmpty {
+                AIResponseView(viewModel: viewModel)
+            } else {
+                FAQListScrollView(viewModel: viewModel)
+            }
+
+            // Search field at bottom for macOS
+            Divider()
+            SearchField(viewModel: viewModel)
+                .padding()
+        }
+        .onAppear {
+            let loadedFAQs = FAQLoader.load(named: filename)
+            viewModel.configure(with: loadedFAQs)
+        }
+        #endif
     }
 }
