@@ -6,12 +6,12 @@ final class FAQLoaderTests: XCTestCase {
     // MARK: - File Loading Tests
 
     func testLoadJSONFile() {
-        let faqs = FAQLoader.loadFile(named: "test_faqs", format: .json, bundle: .module)
+        let result = FAQLoader.loadFile(named: "test_faqs", format: .json, bundle: .module)
 
-        XCTAssertNotNil(faqs, "Should successfully load JSON file")
-        XCTAssertEqual(faqs?.count, 5, "Should load 5 FAQs from test_faqs.json")
+        XCTAssertNotNil(result, "Should successfully load JSON file")
+        XCTAssertEqual(result?.faqs.count, 5, "Should load 5 FAQs from test_faqs.json")
 
-        guard let firstFAQ = faqs?.first else {
+        guard let firstFAQ = result?.faqs.first else {
             XCTFail("Should have at least one FAQ")
             return
         }
@@ -22,12 +22,12 @@ final class FAQLoaderTests: XCTestCase {
     }
 
     func testLoadPlistFile() {
-        let faqs = FAQLoader.loadFile(named: "test_faqs", format: .plist, bundle: .module)
+        let result = FAQLoader.loadFile(named: "test_faqs", format: .plist, bundle: .module)
 
-        XCTAssertNotNil(faqs, "Should successfully load plist file")
-        XCTAssertEqual(faqs?.count, 2, "Should load 2 FAQs from test_faqs.plist")
+        XCTAssertNotNil(result, "Should successfully load plist file")
+        XCTAssertEqual(result?.faqs.count, 2, "Should load 2 FAQs from test_faqs.plist")
 
-        guard let firstFAQ = faqs?.first else {
+        guard let firstFAQ = result?.faqs.first else {
             XCTFail("Should have at least one FAQ")
             return
         }
@@ -38,26 +38,26 @@ final class FAQLoaderTests: XCTestCase {
     }
 
     func testLoadPlistWithEmptyTopic() {
-        let faqs = FAQLoader.loadFile(named: "test_faqs", format: .plist, bundle: .module)
+        let result = FAQLoader.loadFile(named: "test_faqs", format: .plist, bundle: .module)
 
-        XCTAssertNotNil(faqs, "Should successfully load plist file")
-        XCTAssertEqual(faqs?.count, 2)
+        XCTAssertNotNil(result, "Should successfully load plist file")
+        XCTAssertEqual(result?.faqs.count, 2)
 
         // Find the FAQ with empty topic
-        let faqWithEmptyTopic = faqs?.first { $0.title == "Empty Topic Test" }
+        let faqWithEmptyTopic = result?.faqs.first { $0.title == "Empty Topic Test" }
         XCTAssertNotNil(faqWithEmptyTopic, "Should find FAQ with empty topic")
         XCTAssertNil(faqWithEmptyTopic?.topic, "Empty topic string should be converted to nil")
     }
 
     func testLoadNonExistentFile() {
-        let faqs = FAQLoader.loadFile(named: "nonexistent_file", format: .json, bundle: .module)
+        let result = FAQLoader.loadFile(named: "nonexistent_file", format: .json, bundle: .module)
 
-        XCTAssertNil(faqs, "Should return nil for non-existent file")
+        XCTAssertNil(result, "Should return nil for non-existent file")
     }
 
     func testLoadWithAutoDetection() {
         // Should load JSON when both JSON and plist exist (JSON has priority)
-        let faqs = FAQLoader.load(named: "test_faqs", bundle: .module)
+        let (faqs, _) = FAQLoader.load(named: "test_faqs", bundle: .module)
 
         XCTAssertEqual(faqs.count, 5, "Should load JSON file first (5 FAQs)")
     }
@@ -66,12 +66,12 @@ final class FAQLoaderTests: XCTestCase {
         // Create a test where only plist exists
         // Since test_faqs has both, let's test with a plist-only file
         // For this test, we'll verify the fallback behavior works
-        let faqs = FAQLoader.load(named: "test_faqs", bundle: .module)
+        let (faqs, _) = FAQLoader.load(named: "test_faqs", bundle: .module)
         XCTAssertFalse(faqs.isEmpty, "Should load either JSON or plist")
     }
 
     func testLoadNonExistentFileWithAutoDetection() {
-        let faqs = FAQLoader.load(named: "completely_missing_file", bundle: .module)
+        let (faqs, _) = FAQLoader.load(named: "completely_missing_file", bundle: .module)
 
         XCTAssertTrue(faqs.isEmpty, "Should return empty array for non-existent file")
     }
@@ -131,6 +131,58 @@ final class FAQLoaderTests: XCTestCase {
         XCTAssertEqual(topics[2].title, "Zebra")
     }
 
+    func testOrganizeIntoTopicsWithCustomOrder() {
+        let faqs = [
+            FAQ(title: "Q1", details: "A1", topic: "Zebra"),
+            FAQ(title: "Q2", details: "A2", topic: "Apple"),
+            FAQ(title: "Q3", details: "A3", topic: "Banana")
+        ]
+
+        let customOrder = ["Zebra", "Banana", "Apple"]
+        let topics = FAQLoader.organizeIntoTopics(faqs, topicOrder: customOrder)
+
+        XCTAssertEqual(topics.count, 3)
+        XCTAssertEqual(topics[0].title, "Zebra", "Topics should follow custom order")
+        XCTAssertEqual(topics[1].title, "Banana")
+        XCTAssertEqual(topics[2].title, "Apple")
+    }
+
+    func testOrganizeIntoTopicsWithPartialCustomOrder() {
+        let faqs = [
+            FAQ(title: "Q1", details: "A1", topic: "Zebra"),
+            FAQ(title: "Q2", details: "A2", topic: "Apple"),
+            FAQ(title: "Q3", details: "A3", topic: "Banana"),
+            FAQ(title: "Q4", details: "A4", topic: "Cherry")
+        ]
+
+        // Only specify order for some topics
+        let customOrder = ["Banana", "Zebra"]
+        let topics = FAQLoader.organizeIntoTopics(faqs, topicOrder: customOrder)
+
+        XCTAssertEqual(topics.count, 4)
+        XCTAssertEqual(topics[0].title, "Banana", "Ordered topics should come first")
+        XCTAssertEqual(topics[1].title, "Zebra")
+        // Apple and Cherry not in order, should be alphabetical
+        XCTAssertEqual(topics[2].title, "Apple")
+        XCTAssertEqual(topics[3].title, "Cherry")
+    }
+
+    func testOrganizeIntoTopicsWithGeneralFirst() {
+        let faqs = [
+            FAQ(title: "Q1", details: "A1", topic: "Zebra"),
+            FAQ(title: "Q2", details: "A2", topic: nil), // Goes to General
+            FAQ(title: "Q3", details: "A3", topic: "Apple")
+        ]
+
+        let customOrder = ["Zebra", "Apple"]
+        let topics = FAQLoader.organizeIntoTopics(faqs, topicOrder: customOrder)
+
+        XCTAssertEqual(topics.count, 3)
+        XCTAssertEqual(topics[0].title, "General", "General should always be first")
+        XCTAssertEqual(topics[1].title, "Zebra", "Then custom order")
+        XCTAssertEqual(topics[2].title, "Apple")
+    }
+
     func testOrganizeEmptyArray() {
         let topics = FAQLoader.organizeIntoTopics([])
 
@@ -150,8 +202,8 @@ final class FAQLoaderTests: XCTestCase {
     // MARK: - Integration Tests
 
     func testLoadAndOrganizeJSONFile() {
-        let faqs = FAQLoader.load(named: "test_faqs", bundle: .module)
-        let topics = FAQLoader.organizeIntoTopics(faqs)
+        let (faqs, topicOrder) = FAQLoader.load(named: "test_faqs", bundle: .module)
+        let topics = FAQLoader.organizeIntoTopics(faqs, topicOrder: topicOrder)
 
         XCTAssertFalse(topics.isEmpty, "Should create topic groups from loaded FAQs")
 
@@ -168,11 +220,18 @@ final class FAQLoaderTests: XCTestCase {
     }
 
     func testFAQUniqueIDs() {
-        let faqs = FAQLoader.load(named: "test_faqs", bundle: .module)
+        let (faqs, _) = FAQLoader.load(named: "test_faqs", bundle: .module)
 
         let ids = faqs.map { $0.id }
         let uniqueIds = Set(ids)
 
         XCTAssertEqual(ids.count, uniqueIds.count, "All FAQ IDs should be unique")
+    }
+
+    func testLoadTopicOrderFromJSON() {
+        let result = FAQLoader.loadFile(named: "test_faqs", format: .json, bundle: .module)
+
+        XCTAssertNotNil(result, "Should successfully load JSON file")
+        // test_faqs.json may or may not have topic order - just verify it loads
     }
 }

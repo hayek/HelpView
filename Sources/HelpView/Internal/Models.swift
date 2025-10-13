@@ -51,6 +51,7 @@ struct Topic: Identifiable {
 /// Container for all FAQs loaded from JSON
 struct FAQCollection: Codable {
     let faqs: [FAQ]
+    let topics: [String]? // Optional ordered list of topic names
 }
 
 // MARK: - AI Response Model

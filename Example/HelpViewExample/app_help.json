@@ -1,54 +1,71 @@
 {
+  "topics": [
+    "Getting Started",
+    "Integration",
+    "AI Features",
+    "FAQ Data",
+    "Customization"
+  ],
   "faqs": [
     {
-      "title": "How do I create a new account?",
-      "details": "To create a new account:\n\n1. Tap the **Sign Up** button on the welcome screen\n2. Enter your email address\n3. Choose a secure password\n4. Verify your email through the link we send you\n5. Complete your profile setup\n\nYour account will be ready to use immediately after verification.",
+      "title": "What is HelpView?",
+      "details": "HelpView is a **SwiftUI framework** that adds AI-powered FAQ documentation to your iOS and macOS apps.\n\n**Key Features:**\n- Natural language search using Apple Intelligence\n- Automatic fallback to text-based search\n- Support for JSON and plist FAQ formats\n- Beautiful, native SwiftUI interface\n- Full markdown support in answers\n- Topic-based organization\n\nAll AI processing happens **on-device** with Apple's Foundation Models—no network required!",
       "topic": "Getting Started"
     },
     {
-      "title": "How do I reset my password?",
-      "details": "If you've forgotten your password:\n\n1. Tap **Forgot Password** on the login screen\n2. Enter your email address\n3. Check your email for a reset link\n4. Click the link and enter your new password\n5. Confirm your new password\n\nFor security reasons, password reset links expire after 24 hours.",
-      "topic": "Account Management"
-    },
-    {
-      "title": "Can I use the app offline?",
-      "details": "Yes! The app supports **offline mode** with the following features:\n\n- Access previously synced content\n- Create and edit items locally\n- View your saved favorites\n- Changes sync automatically when you reconnect\n\n*Note: Some features like real-time collaboration require an internet connection.*",
-      "topic": "Features"
-    },
-    {
-      "title": "How do I enable dark mode?",
-      "details": "Dark mode can be enabled in two ways:\n\n**Automatic (Recommended):**\n- Go to **Settings** → **Appearance**\n- Select **System** to match your device settings\n\n**Manual:**\n- Go to **Settings** → **Appearance**\n- Choose **Light** or **Dark**\n\nThe app will remember your preference across sessions.",
-      "topic": "Settings"
-    },
-    {
-      "title": "Is my data secure?",
-      "details": "We take your privacy and security seriously:\n\n✓ **End-to-end encryption** for sensitive data\n✓ **Secure cloud backup** with AES-256 encryption\n✓ **Two-factor authentication** available\n✓ **Zero-knowledge architecture** - we can't access your encrypted data\n✓ **Regular security audits** by independent firms\n\nYou can review our full security practices in Settings → Privacy & Security.",
-      "topic": "Privacy & Security"
-    },
-    {
-      "title": "How do I export my data?",
-      "details": "To export your data:\n\n1. Go to **Settings** → **Data Management**\n2. Tap **Export Data**\n3. Choose your preferred format:\n   - **JSON** - Full data export\n   - **CSV** - Spreadsheet compatible\n   - **PDF** - Human-readable format\n4. Select what to include (documents, settings, etc.)\n5. Tap **Export** and choose where to save\n\nExports are generated immediately and include all your content.",
-      "topic": "Account Management"
-    },
-    {
-      "title": "What devices are supported?",
-      "details": "The app is available on:\n\n**iOS:** Requires iOS 26.0 or later\n- iPhone\n- iPad\n\n**macOS:** Requires macOS 26.0 or later\n- Apple Silicon and Intel Macs\n\nAll your data syncs seamlessly across all your devices via iCloud.",
+      "title": "What are the system requirements?",
+      "details": "**Platform Requirements:**\n- iOS 26.0 or later\n- macOS 26.0 or later\n- Swift 6.2+\n\n**For AI Features:**\n- A17 Pro or M1+ chip\n- Apple Intelligence enabled in Settings\n- Language model downloaded\n\nThe SDK works on all supported platforms, but **Apple Intelligence features** are only available on devices with the required hardware.",
       "topic": "Getting Started"
     },
     {
-      "title": "How do I contact support?",
-      "details": "We're here to help! You can reach us through:\n\n📧 **Email:** support@example.com (24-48 hour response time)\n💬 **In-app chat:** Tap the chat icon in Settings\n🐦 **Twitter:** @exampleapp\n📖 **Help Center:** help.example.com\n\nFor urgent issues, use the in-app chat for the fastest response.",
-      "topic": null
+      "title": "How do I add HelpView to my project?",
+      "details": "**Using Swift Package Manager:**\n\n1. In Xcode, go to **File → Add Package Dependencies**\n2. Enter the repository URL\n3. Choose your version requirements\n4. Add the package to your target\n\n**Import in your code:**\n```swift\nimport HelpView\n```\n\nThen use either `HelpViewButton` for quick integration or `HelpContentView` for custom navigation flows.",
+      "topic": "Integration"
     },
     {
-      "title": "Can I share content with others?",
-      "details": "Yes! Sharing is easy:\n\n**Individual Items:**\n1. Tap the **Share** button on any item\n2. Choose how to share (link, email, message)\n3. Set permissions (view only or edit)\n\n**Collections:**\n1. Open a collection\n2. Tap the three dots menu\n3. Select **Share Collection**\n4. Choose recipients and permissions\n\nYou can revoke access anytime from the sharing settings.",
-      "topic": "Features"
+      "title": "What's the difference between HelpViewButton and HelpContentView?",
+      "details": "HelpView provides **two public APIs** for different use cases:\n\n**HelpViewButton** - Quick Integration\n- Displays a question mark button\n- Presents FAQs in a modal sheet\n- Includes built-in \"Done\" button\n- Perfect for toolbar placement\n\n```swift\n.toolbar {\n    HelpViewButton(named: \"app_help\")\n}\n```\n\n**HelpContentView** - Custom Navigation\n- Embeddable content view\n- No modal presentation or Done button\n- Full control over navigation\n- Works with NavigationLink, TabView, etc.\n\n```swift\nNavigationLink(\"Help\") {\n    HelpContentView(named: \"app_help\")\n}\n```",
+      "topic": "Integration"
     },
     {
-      "title": "What are the subscription options?",
-      "details": "We offer flexible plans:\n\n**Free:**\n- Up to 100 items\n- Basic features\n- 1 GB storage\n\n**Pro** ($4.99/month or $49.99/year):\n- Unlimited items\n- Advanced features\n- 100 GB storage\n- Priority support\n- Offline mode\n\n**Family** ($9.99/month or $99.99/year):\n- Everything in Pro\n- Up to 6 family members\n- 500 GB shared storage\n- Family sharing features\n\nAll plans include a **14-day free trial**!",
-      "topic": "Account Management"
+      "title": "How do I create FAQ content?",
+      "details": "Create a **JSON** or **plist** file in your app bundle:\n\n**JSON Format:**\n```json\n{\n  \"topics\": [\"Getting Started\", \"Features\"],\n  \"faqs\": [\n    {\n      \"title\": \"How do I use this?\",\n      \"details\": \"Here's how to use...\",\n      \"topic\": \"Getting Started\"\n    }\n  ]\n}\n```\n\n**Required Steps:**\n1. Create your FAQ file\n2. Add it to your Xcode project\n3. Ensure it's in **Copy Bundle Resources** build phase\n4. Reference it by name (without extension):\n\n```swift\nHelpViewButton(named: \"app_help\")\n```",
+      "topic": "FAQ Data"
+    },
+    {
+      "title": "Can I use plist files instead of JSON?",
+      "details": "Yes! HelpView supports both **JSON** and **plist** formats.\n\n**Plist Structure:**\n```xml\n<dict>\n  <key>topics</key>\n  <array>\n    <string>Getting Started</string>\n  </array>\n  <key>faqs</key>\n  <array>\n    <dict>\n      <key>title</key>\n      <string>Your question</string>\n      <key>details</key>\n      <string>Your answer</string>\n      <key>topic</key>\n      <string>Getting Started</string>\n    </dict>\n  </array>\n</dict>\n```\n\n**Format Detection:**\nThe loader tries `.json` first, then `.plist` automatically. Just use the filename without extension.",
+      "topic": "FAQ Data"
+    },
+    {
+      "title": "How does Apple Intelligence integration work?",
+      "details": "HelpView automatically uses **Apple Intelligence** when available:\n\n**Availability Check:**\n- Detects if Apple Intelligence is enabled\n- Checks if language model is downloaded\n- Verifies device has required hardware\n\n**AI-Powered Search:**\n- Natural language understanding\n- Context-aware responses\n- Structured answers using `@Generable` macro\n- All processing happens **on-device**\n\n**Automatic Fallback:**\nIf Apple Intelligence isn't available, HelpView seamlessly falls back to text-based search—no additional code needed!",
+      "topic": "AI Features"
+    },
+    {
+      "title": "Does HelpView work without Apple Intelligence?",
+      "details": "**Yes!** HelpView works on all supported devices.\n\n**Without Apple Intelligence:**\n- Uses text-based search\n- Matches keywords in FAQ titles and content\n- Full markdown rendering\n- Topic-based browsing\n\n**With Apple Intelligence:**\n- Natural language queries\n- Context-aware responses\n- Better search relevance\n\nThe SDK **automatically detects** what's available and adapts accordingly. No special handling required in your code!",
+      "topic": "AI Features"
+    },
+    {
+      "title": "Can I use markdown in FAQ answers?",
+      "details": "Yes! All FAQ answers support **full markdown formatting**:\n\n**Supported Elements:**\n- **Bold** and *italic* text\n- Headers (# ## ###)\n- Bullet lists\n- Numbered lists\n- Code blocks\n- Links\n- Block quotes\n\n**Example:**\n```json\n{\n  \"title\": \"How do I format text?\",\n  \"details\": \"Use **bold** for emphasis and `code` for technical terms.\"\n}\n```\n\nMarkdown is rendered using SwiftUI's built-in markdown support for native, beautiful typography.",
+      "topic": "FAQ Data"
+    },
+    {
+      "title": "How are FAQs organized?",
+      "details": "FAQs are organized by **topics** for easy browsing:\n\n**Topic Assignment:**\n- Each FAQ can have a `topic` field\n- FAQs without a topic go to \"General\"\n- Topics appear in the order specified in `topics` array\n\n**Example:**\n```json\n{\n  \"topics\": [\"Setup\", \"Usage\", \"Troubleshooting\"],\n  \"faqs\": [\n    {\n      \"title\": \"How to install?\",\n      \"topic\": \"Setup\"\n    }\n  ]\n}\n```\n\nUsers can browse by topic or use search to find specific answers quickly.",
+      "topic": "Customization"
+    },
+    {
+      "title": "Is my user's data private?",
+      "details": "**Absolutely!** HelpView is built with privacy in mind:\n\n✓ **100% on-device processing** - No network requests\n✓ **No data collection** - We don't track anything\n✓ **No analytics** - Your users' queries stay private\n✓ **Apple Intelligence** uses on-device models only\n✓ **Open source** - You can review all the code\n\nFAQ content is bundled with your app, and all AI processing happens locally using Apple's Foundation Models framework.",
+      "topic": "Getting Started"
+    },
+    {
+      "title": "Can I customize the appearance?",
+      "details": "HelpView uses **native SwiftUI styling** that automatically adapts to your app:\n\n**Automatic Adaptation:**\n- Respects system color scheme (light/dark mode)\n- Uses system fonts and sizing\n- Follows platform conventions (iOS vs macOS)\n- Supports Dynamic Type for accessibility\n\n**Current Customization:**\nThe SDK currently provides a polished, native experience out of the box. Theme customization options are planned for future releases.\n\nThe focus is on **consistency** with system UI patterns.",
+      "topic": "Customization"
     }
   ]
 }

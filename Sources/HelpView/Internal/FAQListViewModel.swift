@@ -11,11 +11,13 @@ class FAQListViewModel {
 
     var topics: [Topic] = []
     var filteredTopics: [Topic] = []
+    var topicOrder: [String]?
 
     let aiHelper = AIHelper()
 
-    func configure(with faqs: [FAQ]) {
-        self.topics = FAQLoader.organizeIntoTopics(faqs)
+    func configure(with faqs: [FAQ], topicOrder: [String]? = nil) {
+        self.topicOrder = topicOrder
+        self.topics = FAQLoader.organizeIntoTopics(faqs, topicOrder: topicOrder)
         self.filteredTopics = topics
         aiHelper.configure(with: faqs)
     }
@@ -63,7 +65,7 @@ class FAQListViewModel {
         } else {
             // Use search instead
             let searchResults = aiHelper.searchFAQs(query: searchQuery)
-            filteredTopics = FAQLoader.organizeIntoTopics(searchResults)
+            filteredTopics = FAQLoader.organizeIntoTopics(searchResults, topicOrder: topicOrder)
         }
     }
 

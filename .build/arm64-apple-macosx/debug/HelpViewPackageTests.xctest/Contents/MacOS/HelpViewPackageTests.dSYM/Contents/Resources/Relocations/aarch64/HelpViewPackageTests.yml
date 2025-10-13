@@ -1,0 +1,5 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     '/Users/ahayek/Developer/HelpView/.build/arm64-apple-macosx/debug/HelpViewPackageTests.xctest/Contents/MacOS/HelpViewPackageTests'
+relocations:     []
+...

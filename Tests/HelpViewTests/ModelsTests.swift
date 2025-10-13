@@ -169,7 +169,7 @@ final class ModelsTests: XCTestCase {
             FAQ(title: "Q2", details: "A2", topic: "Topic 2")
         ]
 
-        let originalCollection = FAQCollection(faqs: faqs)
+        let originalCollection = FAQCollection(faqs: faqs, topics: nil)
 
         let encoder = JSONEncoder()
         let data = try encoder.encode(originalCollection)
