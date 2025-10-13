@@ -172,11 +172,3 @@ When Apple Intelligence is unavailable, HelpView falls back to text-based search
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-[Your chosen license]
-
-## Credits
-
-Created with ❤️ using Apple's Foundation Models and SwiftUI.
