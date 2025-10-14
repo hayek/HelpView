@@ -14,7 +14,6 @@ HelpView provides an easy-to-integrate help system that leverages Apple's Founda
 - 📱 **SwiftUI Native**: Built entirely in SwiftUI for modern iOS/macOS apps
 - 🔄 **Automatic Fallback**: Gracefully degrades to text search when AI is unavailable
 - 📝 **Markdown Support**: Rich text formatting in FAQ answers
-- 🎨 **Customizable**: Two integration options for different use cases
 - 📦 **Zero Dependencies**: Pure Swift Package with no external dependencies
 
 ## Requirements
