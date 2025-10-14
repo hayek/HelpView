@@ -17,10 +17,10 @@ HelpView provides an easy-to-integrate help system that leverages Apple's Founda
 
 ## Requirements
 
-- iOS 26+ / macOS 26+
+- iOS 17+ / macOS 15+
 - Swift 6.2+
 - Xcode 16+
-- Apple Intelligence (optional, for AI features)
+- Apple Intelligence (optional, for AI features - requires iOS 26+/macOS 26+ and compatible hardware)
 
 ## Installation
 
@@ -66,7 +66,11 @@ Create a JSON file (e.g., `app_help.json`) and add it to your app bundle:
 
 ### 2. Integrate HelpView
 
-**Option A: Button with Sheet Presentation** (Quickest)
+HelpView provides two public APIs for different integration needs:
+
+**Option A: `HelpViewButton` - Button with Sheet Presentation** (Quickest)
+
+Use when you want a ready-to-use help button that presents FAQs in a modal sheet:
 
 ```swift
 import SwiftUI
@@ -78,7 +82,7 @@ struct ContentView: View {
             Text("Your app content")
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
-                        HelpView(named: "app_help")
+                        HelpViewButton(named: "app_help")
                     }
                 }
         }
@@ -86,7 +90,9 @@ struct ContentView: View {
 }
 ```
 
-**Option B: Embeddable Content View** (More Control)
+**Option B: `HelpContentView` - Embeddable Content View** (More Control)
+
+Use when you want to embed help content directly in your navigation hierarchy:
 
 ```swift
 import SwiftUI
@@ -105,12 +111,73 @@ struct ContentView: View {
 }
 ```
 
+**Option B - Alternative Uses:**
+
+```swift
+// In a TabView
+TabView {
+    ContentView()
+        .tabItem { Label("Home", systemImage: "house") }
+
+    HelpContentView(named: "app_help")
+        .tabItem { Label("Help", systemImage: "questionmark.circle") }
+}
+
+// With programmatic navigation
+NavigationStack {
+    Button("Get Help") {
+        showHelp = true
+    }
+    .navigationDestination(isPresented: $showHelp) {
+        HelpContentView(named: "app_help")
+    }
+}
+```
+
 ### 3. Run Your App
 
 That's it! HelpView will automatically:
 - Detect if Apple Intelligence is available
 - Provide AI-powered answers when possible
 - Fall back to text search otherwise
+
+## API Reference
+
+### `HelpViewButton`
+
+A ready-to-use help button that presents FAQ documentation in a sheet.
+
+```swift
+public struct HelpViewButton: View {
+    public init(named filename: String)
+}
+```
+
+**Features:**
+- Displays a question mark button
+- Automatically presents help in a modal sheet
+- Includes a "Done" button for dismissal
+- Perfect for toolbar placement
+
+**When to use:** Quick integration, toolbar buttons, or when you want modal presentation.
+
+### `HelpContentView`
+
+An embeddable help content view for custom navigation flows.
+
+```swift
+public struct HelpContentView: View {
+    public init(named filename: String)
+}
+```
+
+**Features:**
+- No modal presentation wrapper
+- Includes navigation title but no "Done" button
+- Full control over navigation flow
+- Can be embedded anywhere in your view hierarchy
+
+**When to use:** Custom navigation flows, tab bars, NavigationLinks, or when you need more control over presentation.
 
 ## Documentation
 

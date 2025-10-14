@@ -5,11 +5,13 @@
 The HelpView SPM framework has been successfully created with the following components:
 
 ### Framework Structure (`HelpView/`)
-- **HelpView.swift** - Main public API with question mark button
+- **HelpViewButton.swift** - Button with sheet presentation (main public API)
+- **HelpContentView.swift** - Embeddable content view (alternative public API)
 - **Models.swift** - FAQ and Topic data models with @Generable macro
-- **FAQLoader.swift** - JSON parsing logic
-- **FAQListView.swift** - Collapsible FAQ list with search/AI interface
+- **FAQLoader.swift** - JSON/plist parsing logic
+- **FAQListViewModel.swift** - View model for FAQ list interface
 - **AIHelper.swift** - AI chatbot with Foundation Models and search fallback
+- **ViewComponents.swift** - Internal UI components
 - **Package.swift** - SPM configuration
 - **README.md** - Complete documentation
 
@@ -65,25 +67,54 @@ The framework is **fully configured** with Apple's Foundation Models:
 
 ## 📝 API Usage
 
+HelpView provides two public APIs:
+
+### Option 1: `HelpViewButton` (Button with Sheet)
+
 ```swift
 import HelpView
 
 // In your SwiftUI view:
 .toolbar {
     ToolbarItem(placement: .topBarTrailing) {
-        HelpView(named: "app_help")
+        HelpViewButton(named: "app_help")
     }
 }
 ```
 
-That's it! Just pass the JSON filename (without extension).
+Use when you want a ready-to-use button with modal sheet presentation.
+
+### Option 2: `HelpContentView` (Embeddable Content)
+
+```swift
+import HelpView
+
+// In a NavigationLink:
+NavigationLink("Help & Support") {
+    HelpContentView(named: "app_help")
+}
+
+// Or in a TabView:
+TabView {
+    ContentView()
+        .tabItem { Label("Home", systemImage: "house") }
+
+    HelpContentView(named: "app_help")
+        .tabItem { Label("Help", systemImage: "questionmark.circle") }
+}
+```
+
+Use when you want full control over navigation and presentation.
+
+Both APIs just require the JSON/plist filename (without extension).
 
 ## 📦 Package Details
 
-- **Platforms**: iOS 26+, macOS 26+
+- **Platforms**: iOS 17+, macOS 15+
 - **Swift**: 6.2+
 - **Dependencies**: None (uses native SwiftUI markdown)
 - **Cross-platform**: Works on iPhone, iPad, and Mac
+- **AI Features**: Require iOS 26+/macOS 26+ with Apple Intelligence enabled
 
 ## 🎨 Design Features
 

@@ -70,7 +70,7 @@ struct ContentView: View {
                 } header: {
                     Text("Integration Examples")
                 } footer: {
-                    Text("The SDK provides two APIs: a ready-to-use button (HelpView) and an embeddable content view (HelpContentView) for custom navigation flows.")
+                    Text("The SDK provides two APIs: a ready-to-use button (HelpViewButton) and an embeddable content view (HelpContentView) for custom navigation flows.")
                 }
             }
             .navigationTitle("HelpView Demo")

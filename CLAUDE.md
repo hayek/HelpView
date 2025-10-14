@@ -16,14 +16,15 @@ This project has two distinct parts:
 ### HelpView Framework Components
 
 **Public API:**
-- `HelpView.swift` - Button with sheet presentation: displays a question mark button that presents FAQs in a sheet
-- `HelpContentView` (in `FAQListView.swift`) - Embeddable content view: the help interface itself for custom navigation flows
+- `HelpViewButton.swift` - Button with sheet presentation: displays a question mark button that presents FAQs in a sheet
+- `HelpContentView.swift` - Embeddable content view: the help interface itself for custom navigation flows
 
 **Core Logic:**
 - `Models.swift` - Contains `FAQ`, `Topic`, `FAQCollection`, and `HelpResponse` (with `@Generable` macro for Foundation Models)
 - `FAQLoader.swift` - Handles loading/parsing of FAQ data from JSON or plist files
 - `AIHelper.swift` - Manages Apple Intelligence integration via `SystemLanguageModel` and `LanguageModelSession`
-- `FAQListView.swift` - Main UI view model and SwiftUI components for displaying FAQs
+- `FAQListViewModel.swift` - View model managing FAQ state and user interactions
+- `ViewComponents.swift` - Internal UI components for displaying FAQs and AI responses
 
 **AI Integration Flow:**
 1. `AIHelper` detects Apple Intelligence availability via `SystemLanguageModel.default.availability`
@@ -88,7 +89,8 @@ HelpView supports both JSON and plist formats. Files must be in the app bundle.
 ## Key Technical Details
 
 ### Platform Requirements
-- iOS 26+, macOS 26+
+- iOS 17+, macOS 15+ (base framework)
+- iOS 26+, macOS 26+ (for Apple Intelligence features)
 - Swift 6.2+
 - Foundation Models framework (for AI features)
 
@@ -135,20 +137,26 @@ HelpViewExample/
 
 HelpView provides two public APIs for integration:
 
-### 1. Button with Sheet Presentation (Quick Integration)
-Use `HelpView` for a ready-to-use question mark button that presents help in a sheet:
+### 1. `HelpViewButton` - Button with Sheet Presentation (Quick Integration)
+Use `HelpViewButton` for a ready-to-use question mark button that presents help in a sheet:
 
 ```swift
 import HelpView
 
 .toolbar {
     ToolbarItem(placement: .topBarTrailing) {
-        HelpView(named: "app_help")  // Filename without extension
+        HelpViewButton(named: "app_help")  // Filename without extension
     }
 }
 ```
 
-### 2. Embeddable Content View (Custom Navigation)
+**Features:**
+- Displays a question mark button
+- Automatically presents help in a modal sheet
+- Includes a "Done" button for dismissal
+- Perfect for toolbar placement
+
+### 2. `HelpContentView` - Embeddable Content View (Custom Navigation)
 Use `HelpContentView` to embed the help interface directly in your navigation hierarchy:
 
 ```swift
@@ -177,6 +185,10 @@ TabView {
 }
 ```
 
-**Note:** `HelpContentView` includes its own navigation title but not the "Done" button, giving you full control over navigation flow.
+**Features:**
+- No modal presentation wrapper
+- Includes navigation title but no "Done" button
+- Full control over navigation flow
+- Can be embedded anywhere in your view hierarchy
 
 Ensure the FAQ JSON/plist file is added to the target's "Copy Bundle Resources" build phase.
