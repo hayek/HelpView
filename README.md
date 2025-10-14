@@ -2,6 +2,8 @@
 
 A SwiftUI framework for adding AI-powered FAQ documentation to iOS and macOS apps using Apple Intelligence.
 
+![HelpView Demo](Demo.gif)
+
 ## Overview
 
 HelpView provides an easy-to-integrate help system that leverages Apple's Foundation Models (Apple Intelligence) to provide intelligent, context-aware answers to user questions. When Apple Intelligence is unavailable, it automatically falls back to traditional text-based search.
