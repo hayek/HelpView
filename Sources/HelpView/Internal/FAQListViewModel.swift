@@ -12,12 +12,14 @@ class FAQListViewModel {
     var topics: [Topic] = []
     var filteredTopics: [Topic] = []
     var topicOrder: [String]?
+    var localization: String = "Localizable"
 
     let aiHelper = AIHelper()
 
-    func configure(with faqs: [FAQ], topicOrder: [String]? = nil) {
+    func configure(with faqs: [FAQ], topicOrder: [String]? = nil, localization: String = "Localizable") {
         self.topicOrder = topicOrder
-        self.topics = FAQLoader.organizeIntoTopics(faqs, topicOrder: topicOrder)
+        self.localization = localization
+        self.topics = FAQLoader.organizeIntoTopics(faqs, topicOrder: topicOrder, localization: localization)
         self.filteredTopics = topics
         aiHelper.configure(with: faqs)
     }
@@ -65,7 +67,7 @@ class FAQListViewModel {
         } else {
             // Use search instead
             let searchResults = aiHelper.searchFAQs(query: searchQuery)
-            filteredTopics = FAQLoader.organizeIntoTopics(searchResults, topicOrder: topicOrder)
+            filteredTopics = FAQLoader.organizeIntoTopics(searchResults, topicOrder: topicOrder, localization: localization)
         }
     }
 

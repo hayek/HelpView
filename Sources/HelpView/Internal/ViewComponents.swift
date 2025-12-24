@@ -137,7 +137,7 @@ struct CodeBlockView: View {
                     HStack(spacing: 4) {
                         Image(systemName: showCopiedFeedback ? "checkmark" : "doc.on.doc")
                             .font(.caption)
-                        Text(showCopiedFeedback ? "Copied" : "Copy")
+                        Text(showCopiedFeedback ? "code.copied" : "code.copy", bundle: .module)
                             .font(.caption2)
                             .fontWeight(.medium)
                     }
@@ -583,12 +583,14 @@ struct SyntaxHighlightedText: View {
 /// Internal wrapper for sheet presentation (used by HelpView button)
 struct FAQListView: View {
     let filename: String
+    let localization: String
+
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
             ZStack(alignment: .topTrailing) {
-                HelpContentView(named: filename)
+                HelpContentView(named: filename, localization: localization)
                 #if os(iOS)
                     .toolbar {
                         ToolbarItem(placement: .primaryAction) {
@@ -642,7 +644,9 @@ struct SearchField: View {
             }
 
             TextField(
-                viewModel.aiHelper.isAppleIntelligenceAvailable ? "Ask a question..." : "Search...",
+                viewModel.aiHelper.isAppleIntelligenceAvailable
+                    ? String(localized: "search.placeholder.ai", defaultValue: "Ask a question...", bundle: .module)
+                    : String(localized: "search.placeholder.text", defaultValue: "Search...", bundle: .module),
                 text: $viewModel.searchQuery
             )
             .textFieldStyle(.plain)
@@ -682,7 +686,7 @@ struct AIResponseView: View {
                     VStack(spacing: 20) {
                         AppleIntelligenceLoader()
 
-                        Text("Thinking...")
+                        Text("ai.thinking", bundle: .module)
                             .font(.body)
                             .foregroundStyle(.primary)
                     }
@@ -697,7 +701,7 @@ struct AIResponseView: View {
                     // Related FAQs
                     if !viewModel.relatedFAQs.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Related Questions")
+                            Text("ai.relatedQuestions", bundle: .module)
                                 .font(.body.weight(.bold))
                                 .foregroundStyle(.primary)
                                 .padding(.top, 8)
@@ -712,7 +716,11 @@ struct AIResponseView: View {
                     Button {
                         viewModel.clearSearch()
                     } label: {
-                        Label("Browse All FAQs", systemImage: "list.bullet")
+                        Label {
+                            Text("browse.allFAQs", bundle: .module)
+                        } icon: {
+                            Image(systemName: "list.bullet")
+                        }
                     }
                     .buttonStyle(.bordered)
                 }

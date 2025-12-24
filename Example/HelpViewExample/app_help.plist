@@ -13,6 +13,8 @@
 	<key>faqs</key>
 	<array>
 		<dict>
+			<key>key</key>
+			<string>what-is-helpview</string>
 			<key>title</key>
 			<string>What is HelpView?</string>
 			<key>details</key>
@@ -31,6 +33,8 @@ All AI processing happens **on-device** with Apple's Foundation Models—no netw
 			<string>Getting Started</string>
 		</dict>
 		<dict>
+			<key>key</key>
+			<string>system-requirements</string>
 			<key>title</key>
 			<string>What are the system requirements?</string>
 			<key>details</key>
@@ -49,6 +53,8 @@ The SDK works on all supported platforms, but **Apple Intelligence features** ar
 			<string>Getting Started</string>
 		</dict>
 		<dict>
+			<key>key</key>
+			<string>add-to-project</string>
 			<key>title</key>
 			<string>How do I add HelpView to my project?</string>
 			<key>details</key>
@@ -69,6 +75,8 @@ Then use either `HelpViewButton` for quick integration or `HelpContentView` for 
 			<string>Integration</string>
 		</dict>
 		<dict>
+			<key>key</key>
+			<string>button-vs-content-view</string>
 			<key>title</key>
 			<string>What's the difference between HelpViewButton and HelpContentView?</string>
 			<key>details</key>
@@ -101,6 +109,8 @@ NavigationLink("Help") {
 			<string>Integration</string>
 		</dict>
 		<dict>
+			<key>key</key>
+			<string>create-faq-content</string>
 			<key>title</key>
 			<string>How do I create FAQ content?</string>
 			<key>details</key>
@@ -133,6 +143,8 @@ HelpViewButton(named: "app_help")
 			<string>FAQ Data</string>
 		</dict>
 		<dict>
+			<key>key</key>
+			<string>plist-support</string>
 			<key>title</key>
 			<string>Can I use plist files instead of JSON?</string>
 			<key>details</key>
@@ -165,6 +177,8 @@ The loader tries `.json` first, then `.plist` automatically. Just use the filena
 			<string>FAQ Data</string>
 		</dict>
 		<dict>
+			<key>key</key>
+			<string>ai-integration</string>
 			<key>title</key>
 			<string>How does Apple Intelligence integration work?</string>
 			<key>details</key>
@@ -187,6 +201,8 @@ If Apple Intelligence isn't available, HelpView seamlessly falls back to text-ba
 			<string>AI Features</string>
 		</dict>
 		<dict>
+			<key>key</key>
+			<string>works-without-ai</string>
 			<key>title</key>
 			<string>Does HelpView work without Apple Intelligence?</string>
 			<key>details</key>
@@ -208,6 +224,8 @@ The SDK **automatically detects** what's available and adapts accordingly. No sp
 			<string>AI Features</string>
 		</dict>
 		<dict>
+			<key>key</key>
+			<string>markdown-support</string>
 			<key>title</key>
 			<string>Can I use markdown in FAQ answers?</string>
 			<key>details</key>
@@ -235,6 +253,8 @@ Markdown is rendered using SwiftUI's built-in markdown support for native, beaut
 			<string>FAQ Data</string>
 		</dict>
 		<dict>
+			<key>key</key>
+			<string>faq-organization</string>
 			<key>title</key>
 			<string>How are FAQs organized?</string>
 			<key>details</key>
@@ -263,6 +283,8 @@ Users can browse by topic or use search to find specific answers quickly.</strin
 			<string>Customization</string>
 		</dict>
 		<dict>
+			<key>key</key>
+			<string>privacy</string>
 			<key>title</key>
 			<string>Is my user's data private?</string>
 			<key>details</key>
@@ -279,6 +301,8 @@ FAQ content is bundled with your app, and all AI processing happens locally usin
 			<string>Getting Started</string>
 		</dict>
 		<dict>
+			<key>key</key>
+			<string>customize-appearance</string>
 			<key>title</key>
 			<string>Can I customize the appearance?</string>
 			<key>details</key>

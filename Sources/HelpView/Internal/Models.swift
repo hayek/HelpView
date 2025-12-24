@@ -6,12 +6,14 @@ import FoundationModels
 /// Represents a single FAQ item
 struct FAQ: Codable, Identifiable {
     let id: UUID
+    let key: String? // Stable localization key for .xcstrings lookup
     let title: String // The question
     let details: String // The answer in markdown
     let topic: String? // Optional topic grouping
 
-    init(id: UUID = UUID(), title: String, details: String, topic: String? = nil) {
+    init(id: UUID = UUID(), key: String? = nil, title: String, details: String, topic: String? = nil) {
         self.id = id
+        self.key = key
         self.title = title
         self.details = details
         self.topic = topic
@@ -25,6 +27,13 @@ struct FAQ: Codable, Identifiable {
         // Always generate a new UUID
         self.id = UUID()
 
+        // Handle optional key, treating empty strings as nil
+        if let keyValue = try? container.decode(String.self, forKey: .key) {
+            self.key = keyValue.isEmpty ? nil : keyValue
+        } else {
+            self.key = nil
+        }
+
         self.title = try container.decode(String.self, forKey: .title)
         self.details = try container.decode(String.self, forKey: .details)
 
@@ -37,7 +46,7 @@ struct FAQ: Codable, Identifiable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case title, details, topic
+        case key, title, details, topic
     }
 }
 

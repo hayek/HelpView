@@ -150,9 +150,13 @@ A ready-to-use help button that presents FAQ documentation in a sheet.
 
 ```swift
 public struct HelpViewButton: View {
-    public init(named filename: String)
+    public init(named filename: String, localization: String = "Localizable")
 }
 ```
+
+**Parameters:**
+- `named`: The FAQ filename (without extension) in your app bundle
+- `localization`: The `.xcstrings` filename for translations (default: `"Localizable"`)
 
 **Features:**
 - Displays a question mark button
@@ -168,9 +172,13 @@ An embeddable help content view for custom navigation flows.
 
 ```swift
 public struct HelpContentView: View {
-    public init(named filename: String)
+    public init(named filename: String, localization: String = "Localizable")
 }
 ```
+
+**Parameters:**
+- `named`: The FAQ filename (without extension) in your app bundle
+- `localization`: The `.xcstrings` filename for translations (default: `"Localizable"`)
 
 **Features:**
 - No modal presentation wrapper
@@ -224,6 +232,63 @@ See [PLIST_SUPPORT.md](PLIST_SUPPORT.md) for details on using plist files.
 - FAQs without a `topic` are grouped under "General"
 - Markdown is fully supported in the `details` field
 - File must be added to your app target's "Copy Bundle Resources"
+
+## Localization
+
+HelpView supports full localization of FAQ content using Xcode String Catalogs (`.xcstrings`).
+
+### How It Works
+
+1. **Add stable keys** to your FAQ entries (optional - FAQs without keys display their inline English text):
+
+```json
+{
+  "faqs": [
+    {
+      "key": "getting-started",
+      "title": "How do I get started?",
+      "details": "Welcome! To get started...",
+      "topic": "Getting Started"
+    }
+  ]
+}
+```
+
+2. **Create translations** in your `.xcstrings` file using these key patterns:
+   - `faq.{key}.title` - The FAQ question
+   - `faq.{key}.details` - The FAQ answer
+   - `topic.{slugified-topic}` - Topic names (e.g., `topic.getting-started`)
+
+3. **Use default or custom localization file**:
+
+```swift
+// Uses default Localizable.xcstrings
+HelpViewButton(named: "app_help")
+
+// Uses custom HelpStrings.xcstrings
+HelpViewButton(named: "app_help", localization: "HelpStrings")
+```
+
+### Key Benefits
+
+- **Readable JSON**: English text stays inline in your FAQ file
+- **Stable keys**: Changing English text doesn't break translations
+- **Automatic fallback**: Missing translations fall back to inline English
+- **Optional**: FAQs without `key` field work normally (just not localized)
+
+### Example Localization Keys
+
+For an FAQ with `"key": "export-data"` and `"topic": "Data Management"`:
+
+| Key | English | Spanish |
+|-----|---------|---------|
+| `faq.export-data.title` | How do I export? | ¿Cómo exporto? |
+| `faq.export-data.details` | Go to Settings... | Ir a Ajustes... |
+| `topic.data-management` | Data Management | Gestión de datos |
+
+### SDK UI Strings
+
+HelpView's built-in UI strings are pre-translated into 31 languages. No action required.
 
 ## How It Works
 

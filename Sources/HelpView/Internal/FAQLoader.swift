@@ -12,16 +12,23 @@ class FAQLoader {
     /// - Parameters:
     ///   - filename: The name of the file without extension (will try .json first, then .plist)
     ///   - bundle: The bundle to search in (defaults to .main)
+    ///   - localization: The string catalog name for localization (defaults to "Localizable")
     /// - Returns: A tuple containing the FAQ array and optional topic order
-    static func load(named filename: String, bundle: Bundle = .main) -> (faqs: [FAQ], topicOrder: [String]?) {
+    static func load(named filename: String, bundle: Bundle = .main, localization: String = "Localizable") -> (faqs: [FAQ], topicOrder: [String]?) {
         // Try JSON first
         if let result = loadFile(named: filename, format: .json, bundle: bundle) {
-            return result
+            // Apply localization to FAQ content
+            let localizedFAQs = result.faqs.map { FAQLocalizer.localize($0, bundle: bundle, localization: localization) }
+            let localizedTopicOrder = result.topicOrder?.map { FAQLocalizer.localizeTopicName($0, bundle: bundle, localization: localization) }
+            return (localizedFAQs, localizedTopicOrder)
         }
 
         // Fall back to plist
         if let result = loadFile(named: filename, format: .plist, bundle: bundle) {
-            return result
+            // Apply localization to FAQ content
+            let localizedFAQs = result.faqs.map { FAQLocalizer.localize($0, bundle: bundle, localization: localization) }
+            let localizedTopicOrder = result.topicOrder?.map { FAQLocalizer.localizeTopicName($0, bundle: bundle, localization: localization) }
+            return (localizedFAQs, localizedTopicOrder)
         }
 
         print("❌ HelpView: Could not find \(filename).json or \(filename).plist in bundle")
@@ -68,12 +75,17 @@ class FAQLoader {
     /// - Parameters:
     ///   - faqs: Array of FAQ items to organize
     ///   - topicOrder: Optional array of topic names in desired order. Topics not in this list appear after, sorted alphabetically.
+    ///   - bundle: The bundle for localization (defaults to .main)
+    ///   - localization: The string catalog name for localization (defaults to "Localizable")
     /// - Returns: Array of Topic objects, with "General" (root topic) always first if it exists
-    static func organizeIntoTopics(_ faqs: [FAQ], topicOrder: [String]? = nil) -> [Topic] {
+    static func organizeIntoTopics(_ faqs: [FAQ], topicOrder: [String]? = nil, bundle: Bundle = .main, localization: String = "Localizable") -> [Topic] {
+        // Localized name for the default "General" topic
+        let generalTopicName = FAQLocalizer.localizedString("topic.general", fallback: "General", bundle: bundle, localization: localization)
+
         var topicGroups: [String: [FAQ]] = [:]
 
         for faq in faqs {
-            let topicName = faq.topic ?? "General"
+            let topicName = faq.topic ?? generalTopicName
             topicGroups[topicName, default: []].append(faq)
         }
 
@@ -84,9 +96,9 @@ class FAQLoader {
             let name1 = topic1.title
             let name2 = topic2.title
 
-            // "General" always comes first
-            if name1 == "General" { return true }
-            if name2 == "General" { return false }
+            // "General" (or its localized equivalent) always comes first
+            if name1 == generalTopicName { return true }
+            if name2 == generalTopicName { return false }
 
             // If we have a custom order, use it
             if let order = topicOrder {

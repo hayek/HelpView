@@ -66,6 +66,7 @@ import SwiftUI
 /// - ``HelpContentView`` - For embedding help content in custom navigation flows
 public struct HelpViewButton: View {
     private let filename: String
+    private let localization: String
     @State private var showingHelp = false
 
     /// Creates a help button that presents FAQs in a modal sheet.
@@ -73,18 +74,25 @@ public struct HelpViewButton: View {
     /// The button displays a question mark icon and automatically handles
     /// presentation of the help interface when tapped.
     ///
-    /// - Parameter named: The name of the FAQ file (without extension) in the bundle.
-    ///   Supports both `.json` and `.plist` formats. The loader tries JSON first,
-    ///   then falls back to plist.
+    /// - Parameters:
+    ///   - named: The name of the FAQ file (without extension) in the bundle.
+    ///     Supports both `.json` and `.plist` formats. The loader tries JSON first,
+    ///     then falls back to plist.
+    ///   - localization: The name of the `.xcstrings` file for translations (without extension).
+    ///     Defaults to `"Localizable"`. Use this to specify a custom string catalog for FAQ translations.
     ///
     /// ## Example
     ///
     /// ```swift
-    /// // For a file named "app_help.json" or "app_help.plist"
+    /// // Using default Localizable.xcstrings
     /// HelpViewButton(named: "app_help")
+    ///
+    /// // Using a custom HelpStrings.xcstrings file
+    /// HelpViewButton(named: "app_help", localization: "HelpStrings")
     /// ```
-    public init(named filename: String) {
+    public init(named filename: String, localization: String = "Localizable") {
         self.filename = filename
+        self.localization = localization
     }
 
     public var body: some View {
@@ -94,9 +102,9 @@ public struct HelpViewButton: View {
             Image(systemName: "questionmark.circle")
                 .imageScale(.large)
         }
-        .accessibilityLabel("Help")
+        .accessibilityLabel(Text("help.accessibilityLabel", bundle: .module))
         .sheet(isPresented: $showingHelp) {
-            FAQListView(filename: filename)
+            FAQListView(filename: filename, localization: localization)
         }
     }
 }

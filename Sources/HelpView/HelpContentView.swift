@@ -122,6 +122,7 @@ import SwiftUI
 public struct HelpContentView: View {
     @State private var viewModel = FAQListViewModel()
     let filename: String
+    let localization: String
 
     /// Creates an embeddable help content view for custom navigation flows.
     ///
@@ -129,15 +130,21 @@ public struct HelpContentView: View {
     /// The view includes its own navigation title but no dismissal button, making it
     /// suitable for integration into navigation stacks, tab bars, or other custom layouts.
     ///
-    /// - Parameter named: The name of the FAQ file (without extension) in the bundle.
-    ///   Supports both `.json` and `.plist` formats. The loader tries JSON first,
-    ///   then falls back to plist if JSON is not found.
+    /// - Parameters:
+    ///   - named: The name of the FAQ file (without extension) in the bundle.
+    ///     Supports both `.json` and `.plist` formats. The loader tries JSON first,
+    ///     then falls back to plist if JSON is not found.
+    ///   - localization: The name of the `.xcstrings` file for translations (without extension).
+    ///     Defaults to `"Localizable"`. Use this to specify a custom string catalog for FAQ translations.
     ///
     /// ## Example
     ///
     /// ```swift
-    /// // For a file named "app_help.json" or "app_help.plist"
+    /// // Using default Localizable.xcstrings
     /// HelpContentView(named: "app_help")
+    ///
+    /// // Using a custom HelpStrings.xcstrings file
+    /// HelpContentView(named: "app_help", localization: "HelpStrings")
     /// ```
     ///
     /// ## Notes
@@ -145,8 +152,9 @@ public struct HelpContentView: View {
     /// - The view automatically loads FAQ data when it appears
     /// - Search field placement adapts to the platform (toolbar on iOS, bottom on macOS)
     /// - AI features activate automatically when Apple Intelligence is available
-    public init(named filename: String) {
+    public init(named filename: String, localization: String = "Localizable") {
         self.filename = filename
+        self.localization = localization
     }
 
     public var body: some View {
@@ -169,8 +177,8 @@ public struct HelpContentView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            let (faqs, topicOrder) = FAQLoader.load(named: filename)
-            viewModel.configure(with: faqs, topicOrder: topicOrder)
+            let (faqs, topicOrder) = FAQLoader.load(named: filename, localization: localization)
+            viewModel.configure(with: faqs, topicOrder: topicOrder, localization: localization)
         }
         #else
         VStack(spacing: 0) {
@@ -187,8 +195,8 @@ public struct HelpContentView: View {
                 .padding()
         }
         .onAppear {
-            let (faqs, topicOrder) = FAQLoader.load(named: filename)
-            viewModel.configure(with: faqs, topicOrder: topicOrder)
+            let (faqs, topicOrder) = FAQLoader.load(named: filename, localization: localization)
+            viewModel.configure(with: faqs, topicOrder: topicOrder, localization: localization)
         }
         #endif
     }
