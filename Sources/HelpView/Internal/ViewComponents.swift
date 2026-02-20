@@ -1,5 +1,5 @@
 import SwiftUI
-#if os(iOS)
+#if os(iOS) || os(visionOS)
 import UIKit
 #elseif os(macOS)
 import AppKit
@@ -8,10 +8,11 @@ import AppKit
 // MARK: - Markdown Renderer with Code Support
 struct MarkdownTextView: View {
     let markdown: String
+    @State private var parsedBlocks: [MarkdownBlock] = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            ForEach(parseMarkdown(), id: \.id) { block in
+            ForEach(parsedBlocks) { block in
                 switch block.type {
                 case .code:
                     CodeBlockView(code: block.content, language: block.language)
@@ -23,9 +24,15 @@ struct MarkdownTextView: View {
                 }
             }
         }
+        .onAppear {
+            parsedBlocks = Self.parseMarkdown(markdown)
+        }
+        .onChange(of: markdown) { _, newValue in
+            parsedBlocks = Self.parseMarkdown(newValue)
+        }
     }
 
-    private func parseMarkdown() -> [MarkdownBlock] {
+    private static func parseMarkdown(_ markdown: String) -> [MarkdownBlock] {
         var blocks: [MarkdownBlock] = []
         let lines = markdown.split(separator: "\n", omittingEmptySubsequences: false)
         var currentText = ""
@@ -85,6 +92,7 @@ struct MarkdownTextView: View {
                 type: .text,
                 content: currentText.trimmingCharacters(in: .whitespacesAndNewlines)
             ))
+            blockId += 1
         }
 
         // Handle unclosed code block
@@ -101,7 +109,16 @@ struct MarkdownTextView: View {
     }
 }
 
-struct MarkdownBlock {
+#if DEBUG
+extension MarkdownTextView {
+    /// Test-only access to the markdown parser
+    static func testParseMarkdown(_ markdown: String) -> [MarkdownBlock] {
+        parseMarkdown(markdown)
+    }
+}
+#endif
+
+struct MarkdownBlock: Identifiable {
     let id: Int
     let type: BlockType
     let content: String
@@ -117,6 +134,7 @@ struct CodeBlockView: View {
     let code: String
     let language: String?
     @State private var showCopiedFeedback = false
+    @State private var feedbackTask: Task<Void, Never>?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -144,6 +162,7 @@ struct CodeBlockView: View {
                     .foregroundStyle(showCopiedFeedback ? .green : .secondary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(Text("Copy code"))
                 .animation(.easeInOut(duration: 0.2), value: showCopiedFeedback)
             }
             .padding(.horizontal, 12)
@@ -163,22 +182,26 @@ struct CodeBlockView: View {
             RoundedRectangle(cornerRadius: 8)
                 .strokeBorder(Color.secondary.opacity(0.2), lineWidth: 1)
         )
+        .onDisappear {
+            feedbackTask?.cancel()
+        }
     }
 
     private func copyToClipboard() {
-        #if os(iOS)
+        #if os(iOS) || os(visionOS)
         UIPasteboard.general.string = code
+        showCopiedFeedback = true
         #elseif os(macOS)
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(code, forType: .string)
+        showCopiedFeedback = true
         #endif
 
-        // Show feedback
-        showCopiedFeedback = true
-
         // Reset feedback after 2 seconds
-        Task {
+        feedbackTask?.cancel()
+        feedbackTask = Task {
             try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled else { return }
             showCopiedFeedback = false
         }
     }
@@ -189,6 +212,53 @@ struct SyntaxHighlightedText: View {
     let code: String
     let language: String?
     @Environment(\.colorScheme) private var colorScheme
+
+    // MARK: - Cached Regex Patterns
+    private static let swiftKeywords = ["import", "func", "var", "let", "class", "struct", "enum", "protocol", "extension",
+                   "if", "else", "switch", "case", "default", "for", "while", "repeat", "return",
+                   "guard", "defer", "break", "continue", "fallthrough", "throw", "throws", "try",
+                   "catch", "async", "await", "public", "private", "internal", "fileprivate",
+                   "static", "final", "override", "mutating", "init", "deinit", "self", "Self",
+                   "true", "false", "nil", "in", "where", "as", "is", "some", "any"]
+
+    private static let swiftRegex: NSRegularExpression? = {
+        let pattern = "(@\\w+|\"[^\"]*\"|//.*|/\\*[\\s\\S]*?\\*/|\\b\\d+\\.?\\d*\\b|\\b(?:" + swiftKeywords.joined(separator: "|") + ")\\b|\\w+)"
+        return try? NSRegularExpression(pattern: pattern)
+    }()
+
+    private static let jsonRegex: NSRegularExpression? = {
+        let pattern = "(\"[^\"]*\"\\s*:)|(:?\\s*\"[^\"]*\")|(:?\\s*\\b(?:true|false|null)\\b)|(:?\\s*-?\\d+\\.?\\d*)|([\\[\\]{},:}])"
+        return try? NSRegularExpression(pattern: pattern)
+    }()
+
+    private static let xmlRegex: NSRegularExpression? = {
+        let pattern = "(<!--[\\s\\S]*?-->)|(</?\\w+)|([\\w-]+)=|(\"[^\"]*\")|([/>])"
+        return try? NSRegularExpression(pattern: pattern)
+    }()
+
+    private static let pythonKeywords = ["def", "class", "if", "else", "elif", "for", "while", "return", "import", "from",
+                   "try", "except", "finally", "with", "as", "raise", "pass", "break", "continue",
+                   "True", "False", "None", "and", "or", "not", "in", "is", "lambda", "yield",
+                   "async", "await", "self"]
+
+    private static let pythonRegex: NSRegularExpression? = {
+        let pattern = "(#.*|\"\"\"[\\s\\S]*?\"\"\"|'''[\\s\\S]*?'''|\"[^\"]*\"|'[^']*'|\\b\\d+\\.?\\d*\\b|\\b(?:" + pythonKeywords.joined(separator: "|") + ")\\b|\\w+)"
+        return try? NSRegularExpression(pattern: pattern)
+    }()
+
+    private static let jsKeywords = ["function", "const", "let", "var", "if", "else", "for", "while", "return",
+                   "class", "extends", "import", "export", "from", "default", "async", "await",
+                   "try", "catch", "finally", "throw", "new", "this", "true", "false", "null",
+                   "undefined", "typeof", "instanceof", "break", "continue", "switch", "case"]
+
+    private static let jsRegex: NSRegularExpression? = {
+        let pattern = "(//.*|/\\*[\\s\\S]*?\\*/|\"[^\"]*\"|'[^']*'|`[^`]*`|\\b\\d+\\.?\\d*\\b|\\b(?:" + jsKeywords.joined(separator: "|") + ")\\b|\\w+)"
+        return try? NSRegularExpression(pattern: pattern)
+    }()
+
+    private static let numberCheckRegex: NSRegularExpression? = {
+        try? NSRegularExpression(pattern: "^\\d+\\.?\\d*$")
+    }()
 
     var body: some View {
         Text(highlightedCode())
@@ -214,6 +284,11 @@ struct SyntaxHighlightedText: View {
             attributed.foregroundColor = .primary
             return attributed
         }
+    }
+
+    private func isNumber(_ string: String) -> Bool {
+        guard let regex = Self.numberCheckRegex else { return false }
+        return regex.firstMatch(in: string, range: NSRange(location: 0, length: (string as NSString).length)) != nil
     }
 
     // MARK: - Color Palette
@@ -269,313 +344,108 @@ struct SyntaxHighlightedText: View {
             : Color(red: 0.5, green: 0.0, blue: 0.67)       // #8000AA - dark purple
     }
 
-    // MARK: - Swift Syntax Highlighting
+    // MARK: - Common Highlight Helper
+
+    /// Applies syntax highlighting using a regex and a colorizer closure.
+    /// Applies syntax highlighting using a regex and a colorizer closure.
+    /// - Parameters:
+    ///   - regex: The compiled regex pattern for tokenizing. If nil, returns plain text.
+    ///   - code: The source code string to highlight.
+    ///   - unmatchedColor: Color for text between regex matches (default: `.primary`).
+    ///   - colorizer: Closure that maps a matched token string to its color.
+    private func highlightWithRegex(_ regex: NSRegularExpression?, code: String, unmatchedColor: Color = .primary, colorizer: (String) -> Color) -> AttributedString {
+        guard let regex else {
+            var attributed = AttributedString(code)
+            attributed.foregroundColor = .primary
+            return attributed
+        }
+
+        var result = AttributedString()
+        let nsString = code as NSString
+        let matches = regex.matches(in: code, range: NSRange(location: 0, length: nsString.length))
+        var lastIndex = 0
+
+        for match in matches {
+            let matchRange = match.range
+            let matchString = nsString.substring(with: matchRange)
+
+            if lastIndex < matchRange.location {
+                let beforeRange = NSRange(location: lastIndex, length: matchRange.location - lastIndex)
+                var beforeText = AttributedString(nsString.substring(with: beforeRange))
+                beforeText.foregroundColor = unmatchedColor
+                result.append(beforeText)
+            }
+
+            var matchText = AttributedString(matchString)
+            matchText.foregroundColor = colorizer(matchString)
+            result.append(matchText)
+            lastIndex = matchRange.location + matchRange.length
+        }
+
+        if lastIndex < nsString.length {
+            let remainingRange = NSRange(location: lastIndex, length: nsString.length - lastIndex)
+            var remainingText = AttributedString(nsString.substring(with: remainingRange))
+            remainingText.foregroundColor = unmatchedColor
+            result.append(remainingText)
+        }
+
+        return result
+    }
+
+    private static let jsonLiterals: Set<String> = ["true", "false", "null"]
+
+    // MARK: - Language-Specific Highlighting
+
     private func highlightSwift(_ code: String) -> AttributedString {
-        var result = AttributedString()
-
-        let keywords = ["import", "func", "var", "let", "class", "struct", "enum", "protocol", "extension",
-                       "if", "else", "switch", "case", "default", "for", "while", "repeat", "return",
-                       "guard", "defer", "break", "continue", "fallthrough", "throw", "throws", "try",
-                       "catch", "async", "await", "public", "private", "internal", "fileprivate",
-                       "static", "final", "override", "mutating", "init", "deinit", "self", "Self",
-                       "true", "false", "nil", "in", "where", "as", "is", "some", "any"]
-
-        let pattern = "(@\\w+|\"[^\"]*\"|//.*|/\\*[\\s\\S]*?\\*/|\\b\\d+\\.?\\d*\\b|\\b(?:" + keywords.joined(separator: "|") + ")\\b|\\w+)"
-
-        if let regex = try? NSRegularExpression(pattern: pattern) {
-            let nsString = code as NSString
-            let matches = regex.matches(in: code, range: NSRange(location: 0, length: nsString.length))
-            var lastIndex = 0
-
-            for match in matches {
-                let matchRange = match.range
-                let matchString = nsString.substring(with: matchRange)
-
-                // Add text before match
-                if lastIndex < matchRange.location {
-                    let beforeRange = NSRange(location: lastIndex, length: matchRange.location - lastIndex)
-                    var beforeText = AttributedString(nsString.substring(with: beforeRange))
-                    beforeText.foregroundColor = .primary
-                    result.append(beforeText)
-                }
-
-                var matchText = AttributedString(matchString)
-
-                // Apply adaptive colors based on token type
-                if matchString.hasPrefix("@") {
-                    matchText.foregroundColor = attributeColor
-                } else if matchString.hasPrefix("\"") {
-                    matchText.foregroundColor = stringColor
-                } else if matchString.hasPrefix("//") || matchString.hasPrefix("/*") {
-                    matchText.foregroundColor = commentColor
-                } else if matchString.range(of: "^\\d+\\.?\\d*$", options: .regularExpression) != nil {
-                    matchText.foregroundColor = numberColor
-                } else if keywords.contains(matchString) {
-                    matchText.foregroundColor = keywordColor
-                } else {
-                    matchText.foregroundColor = .primary
-                }
-
-                result.append(matchText)
-                lastIndex = matchRange.location + matchRange.length
-            }
-
-            // Add remaining text
-            if lastIndex < nsString.length {
-                let remainingRange = NSRange(location: lastIndex, length: nsString.length - lastIndex)
-                var remainingText = AttributedString(nsString.substring(with: remainingRange))
-                remainingText.foregroundColor = .primary
-                result.append(remainingText)
-            }
-        } else {
-            var attributed = AttributedString(code)
-            attributed.foregroundColor = .primary
-            return attributed
+        highlightWithRegex(Self.swiftRegex, code: code) { token in
+            if token.hasPrefix("@") { return attributeColor }
+            if token.hasPrefix("\"") { return stringColor }
+            if token.hasPrefix("//") || token.hasPrefix("/*") { return commentColor }
+            if isNumber(token) { return numberColor }
+            if Self.swiftKeywords.contains(token) { return keywordColor }
+            return .primary
         }
-
-        return result
     }
 
-    // MARK: - JSON Syntax Highlighting
     private func highlightJSON(_ code: String) -> AttributedString {
-        var result = AttributedString()
-
-        let pattern = "(\"[^\"]*\"\\s*:)|(:?\\s*\"[^\"]*\")|(:?\\s*\\b(?:true|false|null)\\b)|(:?\\s*-?\\d+\\.?\\d*)|([\\[\\]{},:}])"
-
-        if let regex = try? NSRegularExpression(pattern: pattern) {
-            let nsString = code as NSString
-            let matches = regex.matches(in: code, range: NSRange(location: 0, length: nsString.length))
-            var lastIndex = 0
-
-            for match in matches {
-                let matchRange = match.range
-                let matchString = nsString.substring(with: matchRange)
-
-                // Add text before match
-                if lastIndex < matchRange.location {
-                    let beforeRange = NSRange(location: lastIndex, length: matchRange.location - lastIndex)
-                    var beforeText = AttributedString(nsString.substring(with: beforeRange))
-                    beforeText.foregroundColor = .primary
-                    result.append(beforeText)
-                }
-
-                var matchText = AttributedString(matchString)
-
-                // Apply adaptive colors
-                if matchString.contains(":") && matchString.hasPrefix("\"") {
-                    matchText.foregroundColor = propertyColor
-                } else if matchString.hasPrefix("\"") || (matchString.contains("\"") && matchString.contains(":")) {
-                    matchText.foregroundColor = stringColor
-                } else if matchString.range(of: "true|false|null", options: .regularExpression) != nil {
-                    matchText.foregroundColor = keywordColor
-                } else if matchString.range(of: "-?\\d+\\.?\\d*", options: .regularExpression) != nil {
-                    matchText.foregroundColor = numberColor
-                } else {
-                    matchText.foregroundColor = .secondary
-                }
-
-                result.append(matchText)
-                lastIndex = matchRange.location + matchRange.length
-            }
-
-            // Add remaining text
-            if lastIndex < nsString.length {
-                let remainingRange = NSRange(location: lastIndex, length: nsString.length - lastIndex)
-                var remainingText = AttributedString(nsString.substring(with: remainingRange))
-                remainingText.foregroundColor = .primary
-                result.append(remainingText)
-            }
-        } else {
-            var attributed = AttributedString(code)
-            attributed.foregroundColor = .primary
-            return attributed
+        highlightWithRegex(Self.jsonRegex, code: code, unmatchedColor: .secondary) { token in
+            if token.contains(":") && token.hasPrefix("\"") { return propertyColor }
+            if token.hasPrefix("\"") || (token.contains("\"") && token.contains(":")) { return stringColor }
+            let trimmed = token.trimmingCharacters(in: .whitespaces)
+            if Self.jsonLiterals.contains(trimmed) { return keywordColor }
+            if isNumber(trimmed) { return numberColor }
+            return .secondary
         }
-
-        return result
     }
 
-    // MARK: - XML/Plist Syntax Highlighting
     private func highlightXML(_ code: String) -> AttributedString {
-        var result = AttributedString()
-
-        let pattern = "(<!--[\\s\\S]*?-->)|(</?\\w+)|([\\w-]+)=|(\"[^\"]*\")|([/>])"
-
-        if let regex = try? NSRegularExpression(pattern: pattern) {
-            let nsString = code as NSString
-            let matches = regex.matches(in: code, range: NSRange(location: 0, length: nsString.length))
-            var lastIndex = 0
-
-            for match in matches {
-                let matchRange = match.range
-                let matchString = nsString.substring(with: matchRange)
-
-                // Add text before match
-                if lastIndex < matchRange.location {
-                    let beforeRange = NSRange(location: lastIndex, length: matchRange.location - lastIndex)
-                    var beforeText = AttributedString(nsString.substring(with: beforeRange))
-                    beforeText.foregroundColor = .primary
-                    result.append(beforeText)
-                }
-
-                var matchText = AttributedString(matchString)
-
-                // Apply adaptive colors
-                if matchString.hasPrefix("<!--") {
-                    matchText.foregroundColor = commentColor
-                } else if matchString.hasPrefix("<") {
-                    matchText.foregroundColor = keywordColor
-                } else if matchString.hasSuffix("=") {
-                    matchText.foregroundColor = propertyColor
-                } else if matchString.hasPrefix("\"") {
-                    matchText.foregroundColor = stringColor
-                } else {
-                    matchText.foregroundColor = .secondary
-                }
-
-                result.append(matchText)
-                lastIndex = matchRange.location + matchRange.length
-            }
-
-            // Add remaining text
-            if lastIndex < nsString.length {
-                let remainingRange = NSRange(location: lastIndex, length: nsString.length - lastIndex)
-                var remainingText = AttributedString(nsString.substring(with: remainingRange))
-                remainingText.foregroundColor = .primary
-                result.append(remainingText)
-            }
-        } else {
-            var attributed = AttributedString(code)
-            attributed.foregroundColor = .primary
-            return attributed
+        highlightWithRegex(Self.xmlRegex, code: code) { token in
+            if token.hasPrefix("<!--") { return commentColor }
+            if token.hasPrefix("<") { return keywordColor }
+            if token.hasSuffix("=") { return propertyColor }
+            if token.hasPrefix("\"") { return stringColor }
+            return .secondary
         }
-
-        return result
     }
 
-    // MARK: - Python Syntax Highlighting
     private func highlightPython(_ code: String) -> AttributedString {
-        var result = AttributedString()
-
-        let keywords = ["def", "class", "if", "else", "elif", "for", "while", "return", "import", "from",
-                       "try", "except", "finally", "with", "as", "raise", "pass", "break", "continue",
-                       "True", "False", "None", "and", "or", "not", "in", "is", "lambda", "yield",
-                       "async", "await", "self"]
-
-        let pattern = "(#.*|\"\"\"[\\s\\S]*?\"\"\"|'''[\\s\\S]*?'''|\"[^\"]*\"|'[^']*'|\\b\\d+\\.?\\d*\\b|\\b(?:" + keywords.joined(separator: "|") + ")\\b|\\w+)"
-
-        if let regex = try? NSRegularExpression(pattern: pattern) {
-            let nsString = code as NSString
-            let matches = regex.matches(in: code, range: NSRange(location: 0, length: nsString.length))
-            var lastIndex = 0
-
-            for match in matches {
-                let matchRange = match.range
-                let matchString = nsString.substring(with: matchRange)
-
-                // Add text before match
-                if lastIndex < matchRange.location {
-                    let beforeRange = NSRange(location: lastIndex, length: matchRange.location - lastIndex)
-                    var beforeText = AttributedString(nsString.substring(with: beforeRange))
-                    beforeText.foregroundColor = .primary
-                    result.append(beforeText)
-                }
-
-                var matchText = AttributedString(matchString)
-
-                // Apply adaptive colors
-                if matchString.hasPrefix("#") {
-                    matchText.foregroundColor = commentColor
-                } else if matchString.hasPrefix("\"") || matchString.hasPrefix("'") {
-                    matchText.foregroundColor = stringColor
-                } else if matchString.range(of: "^\\d+\\.?\\d*$", options: .regularExpression) != nil {
-                    matchText.foregroundColor = numberColor
-                } else if keywords.contains(matchString) {
-                    matchText.foregroundColor = keywordColor
-                } else {
-                    matchText.foregroundColor = .primary
-                }
-
-                result.append(matchText)
-                lastIndex = matchRange.location + matchRange.length
-            }
-
-            // Add remaining text
-            if lastIndex < nsString.length {
-                let remainingRange = NSRange(location: lastIndex, length: nsString.length - lastIndex)
-                var remainingText = AttributedString(nsString.substring(with: remainingRange))
-                remainingText.foregroundColor = .primary
-                result.append(remainingText)
-            }
-        } else {
-            var attributed = AttributedString(code)
-            attributed.foregroundColor = .primary
-            return attributed
+        highlightWithRegex(Self.pythonRegex, code: code) { token in
+            if token.hasPrefix("#") { return commentColor }
+            if token.hasPrefix("\"") || token.hasPrefix("'") { return stringColor }
+            if isNumber(token) { return numberColor }
+            if Self.pythonKeywords.contains(token) { return keywordColor }
+            return .primary
         }
-
-        return result
     }
 
-    // MARK: - JavaScript/TypeScript Syntax Highlighting
     private func highlightJavaScript(_ code: String) -> AttributedString {
-        var result = AttributedString()
-
-        let keywords = ["function", "const", "let", "var", "if", "else", "for", "while", "return",
-                       "class", "extends", "import", "export", "from", "default", "async", "await",
-                       "try", "catch", "finally", "throw", "new", "this", "true", "false", "null",
-                       "undefined", "typeof", "instanceof", "break", "continue", "switch", "case"]
-
-        let pattern = "(//.*|/\\*[\\s\\S]*?\\*/|\"[^\"]*\"|'[^']*'|`[^`]*`|\\b\\d+\\.?\\d*\\b|\\b(?:" + keywords.joined(separator: "|") + ")\\b|\\w+)"
-
-        if let regex = try? NSRegularExpression(pattern: pattern) {
-            let nsString = code as NSString
-            let matches = regex.matches(in: code, range: NSRange(location: 0, length: nsString.length))
-            var lastIndex = 0
-
-            for match in matches {
-                let matchRange = match.range
-                let matchString = nsString.substring(with: matchRange)
-
-                // Add text before match
-                if lastIndex < matchRange.location {
-                    let beforeRange = NSRange(location: lastIndex, length: matchRange.location - lastIndex)
-                    var beforeText = AttributedString(nsString.substring(with: beforeRange))
-                    beforeText.foregroundColor = .primary
-                    result.append(beforeText)
-                }
-
-                var matchText = AttributedString(matchString)
-
-                // Apply adaptive colors
-                if matchString.hasPrefix("//") || matchString.hasPrefix("/*") {
-                    matchText.foregroundColor = commentColor
-                } else if matchString.hasPrefix("\"") || matchString.hasPrefix("'") || matchString.hasPrefix("`") {
-                    matchText.foregroundColor = stringColor
-                } else if matchString.range(of: "^\\d+\\.?\\d*$", options: .regularExpression) != nil {
-                    matchText.foregroundColor = numberColor
-                } else if keywords.contains(matchString) {
-                    matchText.foregroundColor = keywordColor
-                } else {
-                    matchText.foregroundColor = .primary
-                }
-
-                result.append(matchText)
-                lastIndex = matchRange.location + matchRange.length
-            }
-
-            // Add remaining text
-            if lastIndex < nsString.length {
-                let remainingRange = NSRange(location: lastIndex, length: nsString.length - lastIndex)
-                var remainingText = AttributedString(nsString.substring(with: remainingRange))
-                remainingText.foregroundColor = .primary
-                result.append(remainingText)
-            }
-        } else {
-            var attributed = AttributedString(code)
-            attributed.foregroundColor = .primary
-            return attributed
+        highlightWithRegex(Self.jsRegex, code: code) { token in
+            if token.hasPrefix("//") || token.hasPrefix("/*") { return commentColor }
+            if token.hasPrefix("\"") || token.hasPrefix("'") || token.hasPrefix("`") { return stringColor }
+            if isNumber(token) { return numberColor }
+            if Self.jsKeywords.contains(token) { return keywordColor }
+            return .primary
         }
-
-        return result
     }
 }
 
@@ -583,6 +453,7 @@ struct SyntaxHighlightedText: View {
 /// Internal wrapper for sheet presentation (used by HelpView button)
 struct FAQListView: View {
     let filename: String
+    let bundle: Bundle
     let localization: String
 
     @Environment(\.dismiss) private var dismiss
@@ -590,8 +461,8 @@ struct FAQListView: View {
     var body: some View {
         NavigationStack {
             ZStack(alignment: .topTrailing) {
-                HelpContentView(named: filename, localization: localization)
-                #if os(iOS)
+                HelpContentView(named: filename, bundle: bundle, localization: localization)
+                #if os(iOS) || os(visionOS)
                     .toolbar {
                         ToolbarItem(placement: .primaryAction) {
                             Button {
@@ -599,6 +470,7 @@ struct FAQListView: View {
                             } label: {
                                 Image(systemName: "xmark")
                             }
+                            .accessibilityLabel(Text("Dismiss"))
                         }
                     }
                 #endif
@@ -639,12 +511,12 @@ struct SearchField: View {
             if viewModel.isLoadingAI {
                 AppleIntelligenceMiniLoader()
             } else {
-                Image(systemName: viewModel.aiHelper.isAppleIntelligenceAvailable ? "sparkles" : "magnifyingglass")
+                Image(systemName: viewModel.isAppleIntelligenceAvailable ? "sparkles" : "magnifyingglass")
                     .foregroundStyle(.primary)
             }
 
             TextField(
-                viewModel.aiHelper.isAppleIntelligenceAvailable
+                viewModel.isAppleIntelligenceAvailable
                     ? String(localized: "search.placeholder.ai", defaultValue: "Ask a question...", bundle: .module)
                     : String(localized: "search.placeholder.text", defaultValue: "Search...", bundle: .module),
                 text: $viewModel.searchQuery
@@ -657,8 +529,8 @@ struct SearchField: View {
                     await viewModel.performSearch()
                 }
             }
-            #if os(iOS)
-            if !viewModel.searchQuery.isEmpty   {
+            #if os(iOS) || os(visionOS)
+            if !viewModel.searchQuery.isEmpty {
                 Button {
                     viewModel.clearSearch()
                 } label: {
@@ -757,6 +629,7 @@ struct RelatedFAQCard: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(Text(viewModel.isFAQExpanded(faq.id) ? "Collapse \(faq.title)" : "Expand \(faq.title)"))
 
             if viewModel.isFAQExpanded(faq.id) {
                 MarkdownTextView(markdown: faq.details)
@@ -834,6 +707,7 @@ struct FAQRow: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(Text(viewModel.isFAQExpanded(faq.id) ? "Collapse \(faq.title)" : "Expand \(faq.title)"))
 
             if viewModel.isFAQExpanded(faq.id) {
                 MarkdownTextView(markdown: faq.details)

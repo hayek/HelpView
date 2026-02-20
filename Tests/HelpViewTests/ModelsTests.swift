@@ -122,7 +122,7 @@ final class ModelsTests: XCTestCase {
 
         XCTAssertEqual(topic.title, "Test Topic")
         XCTAssertEqual(topic.faqs.count, 2)
-        XCTAssertNotNil(topic.id)
+        XCTAssertEqual(topic.id, "Test Topic", "Topic ID should be derived from title")
     }
 
     func testTopicIdentifiable() {
@@ -132,6 +132,8 @@ final class ModelsTests: XCTestCase {
         let topic2 = Topic(title: "Topic 2", faqs: faqs)
 
         XCTAssertNotEqual(topic1.id, topic2.id, "Each topic should have a unique ID")
+        // ID is now derived from title for stable SwiftUI identity
+        XCTAssertEqual(topic1.id, "Topic 1", "Topic ID should be derived from title")
     }
 
     // MARK: - FAQCollection Tests

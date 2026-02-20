@@ -45,6 +45,9 @@ struct FAQ: Codable, Identifiable {
         }
     }
 
+    /// Note: `id` is intentionally excluded from CodingKeys.
+    /// IDs are always auto-generated during decoding — they are never persisted.
+    /// Encoding an FAQ will not include the `id` field, and decoding will produce a new UUID.
     private enum CodingKeys: String, CodingKey {
         case key, title, details, topic
     }
@@ -52,7 +55,8 @@ struct FAQ: Codable, Identifiable {
 
 /// Represents a topic group of FAQs
 struct Topic: Identifiable {
-    let id = UUID()
+    /// Stable identity derived from the topic title to prevent unnecessary SwiftUI re-renders
+    var id: String { title }
     let title: String
     let faqs: [FAQ]
 }

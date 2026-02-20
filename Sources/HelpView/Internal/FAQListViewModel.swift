@@ -14,7 +14,10 @@ class FAQListViewModel {
     var topicOrder: [String]?
     var localization: String = "Localizable"
 
-    let aiHelper = AIHelper()
+    private let aiHelper = AIHelper()
+    private var currentSearchTask: Task<Void, Never>?
+
+    var isAppleIntelligenceAvailable: Bool { aiHelper.isAppleIntelligenceAvailable }
 
     func configure(with faqs: [FAQ], topicOrder: [String]? = nil, localization: String = "Localizable") {
         self.topicOrder = topicOrder
@@ -37,6 +40,9 @@ class FAQListViewModel {
     }
 
     func performSearch() async {
+        // Cancel any in-flight search
+        currentSearchTask?.cancel()
+
         guard !searchQuery.isEmpty else {
             filteredTopics = topics
             aiResponse = ""
@@ -55,15 +61,32 @@ class FAQListViewModel {
             aiResponse = "" // Clear previous response
             relatedFAQs = [] // Clear previous related FAQs
 
-            do {
-                let result = try await aiHelper.generateResponse(for: searchQuery)
-                aiResponse = result.answer
-                relatedFAQs = result.relatedFAQs
-            } catch {
-                aiResponse = "Unable to generate response. Please try again."
-                relatedFAQs = []
+            let queryAtStart = searchQuery
+
+            let task = Task {
+                do {
+                    let result = try await aiHelper.generateResponse(for: queryAtStart)
+
+                    // Verify this search is still current before applying results
+                    guard !Task.isCancelled, queryAtStart == searchQuery else { return }
+
+                    aiResponse = result.answer
+                    relatedFAQs = result.relatedFAQs
+                    // Also update filteredTopics with related FAQs for state consistency
+                    filteredTopics = FAQLoader.organizeIntoTopics(result.relatedFAQs, topicOrder: topicOrder, localization: localization)
+                    isLoadingAI = false
+                } catch {
+                    guard !Task.isCancelled, queryAtStart == searchQuery else { return }
+                    // AI failed — fall back to text-based search so the user still gets results
+                    aiResponse = ""
+                    relatedFAQs = []
+                    let searchResults = aiHelper.searchFAQs(query: queryAtStart)
+                    filteredTopics = FAQLoader.organizeIntoTopics(searchResults, topicOrder: topicOrder, localization: localization)
+                    isLoadingAI = false
+                }
             }
-            isLoadingAI = false
+            currentSearchTask = task
+            await task.value
         } else {
             // Use search instead
             let searchResults = aiHelper.searchFAQs(query: searchQuery)
@@ -72,9 +95,12 @@ class FAQListViewModel {
     }
 
     func clearSearch() {
+        currentSearchTask?.cancel()
         searchQuery = ""
         aiResponse = ""
         relatedFAQs = []
+        expandedFAQs = []
+        isLoadingAI = false
         filteredTopics = topics
     }
 }

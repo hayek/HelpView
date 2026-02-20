@@ -66,6 +66,7 @@ import SwiftUI
 /// - ``HelpContentView`` - For embedding help content in custom navigation flows
 public struct HelpViewButton: View {
     private let filename: String
+    private let bundle: Bundle
     private let localization: String
     @State private var showingHelp = false
 
@@ -78,6 +79,8 @@ public struct HelpViewButton: View {
     ///   - named: The name of the FAQ file (without extension) in the bundle.
     ///     Supports both `.json` and `.plist` formats. The loader tries JSON first,
     ///     then falls back to plist.
+    ///   - bundle: The bundle containing the FAQ file. Defaults to `.main`.
+    ///     Use this when the FAQ file is in an app extension or framework bundle.
     ///   - localization: The name of the `.xcstrings` file for translations (without extension).
     ///     Defaults to `"Localizable"`. Use this to specify a custom string catalog for FAQ translations.
     ///
@@ -89,9 +92,13 @@ public struct HelpViewButton: View {
     ///
     /// // Using a custom HelpStrings.xcstrings file
     /// HelpViewButton(named: "app_help", localization: "HelpStrings")
+    ///
+    /// // Specifying a custom bundle
+    /// HelpViewButton(named: "app_help", bundle: .myExtensionBundle)
     /// ```
-    public init(named filename: String, localization: String = "Localizable") {
+    public init(named filename: String, bundle: Bundle = .main, localization: String = "Localizable") {
         self.filename = filename
+        self.bundle = bundle
         self.localization = localization
     }
 
@@ -104,7 +111,7 @@ public struct HelpViewButton: View {
         }
         .accessibilityLabel(Text("help.accessibilityLabel", bundle: .module))
         .sheet(isPresented: $showingHelp) {
-            FAQListView(filename: filename, localization: localization)
+            FAQListView(filename: filename, bundle: bundle, localization: localization)
         }
     }
 }

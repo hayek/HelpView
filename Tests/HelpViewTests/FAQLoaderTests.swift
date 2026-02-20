@@ -199,6 +199,52 @@ final class FAQLoaderTests: XCTestCase {
         XCTAssertEqual(topics[0].faqs.count, 1)
     }
 
+    // MARK: - FAQCollection Topics Decoding
+
+    func testFAQCollectionWithTopicsOrder() throws {
+        let json = """
+        {
+            "topics": ["Features", "Getting Started"],
+            "faqs": [
+                {"title": "Q1", "details": "A1", "topic": "Getting Started"},
+                {"title": "Q2", "details": "A2", "topic": "Features"}
+            ]
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let collection = try JSONDecoder().decode(FAQCollection.self, from: data)
+
+        XCTAssertEqual(collection.topics, ["Features", "Getting Started"],
+                       "Should decode topic order array")
+        XCTAssertEqual(collection.faqs.count, 2)
+    }
+
+    // MARK: - Malformed Data Tests
+
+    func testLoadMalformedJSON() {
+        // loadFile with a file that exists but contains invalid JSON would return nil
+        // We test via FAQCollection decoding directly
+        let malformedJSON = "{ this is not valid json }"
+        let data = malformedJSON.data(using: .utf8)!
+
+        XCTAssertThrowsError(try JSONDecoder().decode(FAQCollection.self, from: data),
+                             "Should throw for malformed JSON")
+    }
+
+    func testLoadJSONMissingRequiredFields() {
+        let json = """
+        {
+            "faqs": [
+                {"title": "Missing details field"}
+            ]
+        }
+        """
+        let data = json.data(using: .utf8)!
+
+        XCTAssertThrowsError(try JSONDecoder().decode(FAQCollection.self, from: data),
+                             "Should throw when FAQ is missing required 'details' field")
+    }
+
     // MARK: - Integration Tests
 
     func testLoadAndOrganizeJSONFile() {

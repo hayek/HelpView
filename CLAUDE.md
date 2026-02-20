@@ -89,7 +89,7 @@ HelpView supports both JSON and plist formats. Files must be in the app bundle.
 ## Key Technical Details
 
 ### Platform Requirements
-- iOS 17+, macOS 15+ (base framework)
+- iOS 17+, macOS 14+ (base framework)
 - iOS 26+, macOS 26+ (for Apple Intelligence features)
 - Swift 6.2+
 - Foundation Models framework (for AI features)

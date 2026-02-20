@@ -223,6 +223,24 @@ final class AIHelperTests: XCTestCase {
         XCTAssertGreaterThan(results.count, 0, "Should handle large FAQ lists")
     }
 
+    // MARK: - Single-Character Term Filtering Tests
+
+    func testSearchWithSingleCharTermsOnly() {
+        // All terms are single-character, should be filtered out and return all FAQs
+        let results = aiHelper.searchFAQs(query: "a b c")
+
+        XCTAssertEqual(results.count, testFAQs.count,
+                       "Single-character-only terms should return all FAQs")
+    }
+
+    func testSearchWithMixedSingleAndMultiCharTerms() {
+        // "a" should be filtered, "password" should match
+        let results = aiHelper.searchFAQs(query: "a password")
+
+        XCTAssertFalse(results.isEmpty, "Should find results using multi-char terms")
+        XCTAssertTrue(results.contains { $0.title.lowercased().contains("password") })
+    }
+
     // MARK: - Integration Tests
 
     func testSearchReturnsCompleteObjects() {

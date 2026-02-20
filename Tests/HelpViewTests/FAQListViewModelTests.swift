@@ -136,6 +136,7 @@ final class FAQListViewModelTests: XCTestCase {
         viewModel.searchQuery = "test query"
         viewModel.aiResponse = "test response"
         viewModel.relatedFAQs = [testFAQs[0]]
+        viewModel.toggleFAQ(testFAQs[0].id)
 
         // Set filteredTopics to something different
         viewModel.filteredTopics = []
@@ -145,6 +146,7 @@ final class FAQListViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.searchQuery.isEmpty, "Search query should be cleared")
         XCTAssertTrue(viewModel.aiResponse.isEmpty, "AI response should be cleared")
         XCTAssertTrue(viewModel.relatedFAQs.isEmpty, "Related FAQs should be cleared")
+        XCTAssertTrue(viewModel.expandedFAQs.isEmpty, "Expanded FAQs should be cleared")
         XCTAssertEqual(viewModel.filteredTopics.count, viewModel.topics.count,
                        "Should restore all topics")
     }
@@ -152,14 +154,15 @@ final class FAQListViewModelTests: XCTestCase {
     // MARK: - AI Helper Integration Tests
 
     func testAIHelperInitialization() {
-        XCTAssertNotNil(viewModel.aiHelper, "AI helper should be initialized")
+        // AI availability property should be accessible
+        _ = viewModel.isAppleIntelligenceAvailable
     }
 
     func testSearchWithoutAI() async {
         viewModel.configure(with: testFAQs)
 
         // Assuming AI is not available in test environment
-        if !viewModel.aiHelper.isAppleIntelligenceAvailable {
+        if !viewModel.isAppleIntelligenceAvailable {
             viewModel.searchQuery = "password"
             await viewModel.performSearch()
 
@@ -293,7 +296,7 @@ final class FAQListViewModelTests: XCTestCase {
         viewModel.searchQuery = "encrypted"
         await viewModel.performSearch()
 
-        if !viewModel.aiHelper.isAppleIntelligenceAvailable {
+        if !viewModel.isAppleIntelligenceAvailable {
             // With text search, should filter topics
             XCTAssertFalse(viewModel.filteredTopics.isEmpty, "Should have search results")
 
