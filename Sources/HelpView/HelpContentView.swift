@@ -165,22 +165,25 @@ public struct HelpContentView: View {
     }
 
     public var body: some View {
-        #if os(iOS) || os(visionOS)
-        VStack(spacing: 0) {
-            // AI Response or FAQ List
-            if !viewModel.aiResponse.isEmpty {
-                AIResponseView(viewModel: viewModel)
-            } else {
-                FAQListScrollView(viewModel: viewModel)
+        ZStack(alignment: .bottom) {
+            backgroundColor.ignoresSafeArea()
+
+            Group {
+                if !viewModel.aiResponse.isEmpty {
+                    AIResponseView(viewModel: viewModel)
+                } else {
+                    FAQListScrollView(viewModel: viewModel)
+                }
             }
-        }
-        .toolbar {
-            ToolbarItem(placement: .automatic) {
-                SearchField(viewModel: viewModel)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Color.clear.frame(height: 72)
             }
-            if #available(iOS 26.0, macOS 26.0, visionOS 26.0, *) {
-                ToolbarSpacer()
-            }
+
+            SearchField(viewModel: viewModel)
+                .shadow(color: .black.opacity(0.18), radius: 18, x: 0, y: 6)
+                .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 1)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 16)
         }
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
@@ -189,24 +192,13 @@ public struct HelpContentView: View {
             let (faqs, topicOrder) = FAQLoader.load(named: filename, bundle: bundle, localization: localization)
             viewModel.configure(with: faqs, topicOrder: topicOrder, localization: localization)
         }
-        #else
-        VStack(spacing: 0) {
-            // AI Response or FAQ List
-            if !viewModel.aiResponse.isEmpty {
-                AIResponseView(viewModel: viewModel)
-            } else {
-                FAQListScrollView(viewModel: viewModel)
-            }
+    }
 
-            // Search field at bottom for macOS
-            Divider()
-            SearchField(viewModel: viewModel)
-                .padding()
-        }
-        .onAppear {
-            let (faqs, topicOrder) = FAQLoader.load(named: filename, bundle: bundle, localization: localization)
-            viewModel.configure(with: faqs, topicOrder: topicOrder, localization: localization)
-        }
+    private var backgroundColor: Color {
+        #if os(iOS) || os(visionOS)
+        Color(.systemGroupedBackground)
+        #else
+        Color(nsColor: .windowBackgroundColor)
         #endif
     }
 }

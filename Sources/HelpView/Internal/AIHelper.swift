@@ -39,18 +39,36 @@ class AIHelper {
     }
 
     private var faqs: [FAQ] = []
-    // Cached system prompt for creating fresh sessions per query.
-    // Stored as Any? to avoid @available issues with @Observable macro.
-    private var _systemPrompt: String?
+
+    /// Maximum number of full FAQ Q+A entries to include in the prompt per query.
+    /// Apple's on-device SystemLanguageModel has a ~4096-token context window,
+    /// so we retrieve only the most relevant FAQs instead of stuffing all of them.
+    private static let maxRelevantFAQs = 6
+
+    /// Hard cap on `details` characters per included FAQ — protects against a single
+    /// pathologically long FAQ blowing the context window.
+    private static let maxDetailsCharacters = 1200
 
     func configure(with faqs: [FAQ]) {
         self.faqs = faqs
+    }
 
-        guard isAppleIntelligenceAvailable else { return }
+    /// Builds a per-query system prompt containing only the FAQs most relevant
+    /// to the user's query, plus the titles of all FAQs so the model can still
+    /// suggest related entries from the full set.
+    private func buildSystemPrompt(for userQuery: String) -> String {
+        let relevant = Array(searchFAQs(query: userQuery).prefix(Self.maxRelevantFAQs))
 
-        let faqContext = faqs.map { "Q: \($0.title)\nA: \($0.details)" }.joined(separator: "\n\n")
+        let faqContext = relevant.map { faq in
+            let trimmed = faq.details.count > Self.maxDetailsCharacters
+                ? String(faq.details.prefix(Self.maxDetailsCharacters)) + "…"
+                : faq.details
+            return "Q: \(faq.title)\nA: \(trimmed)"
+        }.joined(separator: "\n\n")
 
-        _systemPrompt = """
+        let allTitles = faqs.map { "- \($0.title)" }.joined(separator: "\n")
+
+        return """
         You are a strict FAQ assistant. You may ONLY answer questions using the FAQ information provided below.
 
         CRITICAL RULES:
@@ -59,10 +77,13 @@ class AIHelper {
         - Do NOT use any external knowledge
         - Do NOT answer general knowledge questions
         - Do NOT make up information
-        - Always include 2-4 related FAQ questions the user might find helpful
+        - Always include 2-4 related FAQ questions the user might find helpful, drawn from the full title list
 
-        Available FAQ Topics and Questions:
+        Most relevant FAQs (use these to answer):
         \(faqContext)
+
+        All available FAQ titles (use these for the related suggestions field):
+        \(allTitles)
 
         Remember: You must REFUSE to answer anything not covered in the FAQs above.
         """
@@ -77,10 +98,12 @@ class AIHelper {
 
         #if canImport(FoundationModels)
         if #available(iOS 26.0, macOS 26.0, *) {
-            guard let systemPrompt = _systemPrompt else {
-                assertionFailure("AIHelper._systemPrompt is nil. Call configure(with:) first.")
+            guard !faqs.isEmpty else {
+                assertionFailure("AIHelper.faqs is empty. Call configure(with:) first.")
                 throw AIHelperError.sessionNotInitialized
             }
+
+            let systemPrompt = buildSystemPrompt(for: userQuery)
 
             // Create a fresh session per query to avoid conversation history
             // accumulating and degrading response quality over time.
@@ -114,25 +137,38 @@ class AIHelper {
         throw AIHelperError.aiUnavailable
     }
 
-    /// Performs text-based search when AI is not available
+    /// English stop words filtered out of queries before scoring.
+    /// Without this, words like "how" / "do" / "make" dominate scores on
+    /// short questions and bury the FAQ that actually answers the question.
+    private static let stopWords: Set<String> = [
+        "a", "an", "and", "are", "as", "at", "be", "by", "can", "do", "does",
+        "for", "from", "how", "i", "if", "in", "is", "it", "its", "make",
+        "me", "my", "of", "on", "or", "should", "the", "to", "want", "was",
+        "what", "when", "where", "which", "who", "why", "will", "with",
+        "you", "your"
+    ]
+
+    private static func tokenize(_ query: String) -> [String] {
+        query.lowercased()
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .filter { $0.count >= 2 && !stopWords.contains($0) }
+    }
+
+    /// Performs text-based search when AI is not available.
+    /// Title matches are weighted ~3x detail matches so the FAQ whose
+    /// question best matches the query rises to the top.
     func searchFAQs(query: String) -> [FAQ] {
         guard !query.isEmpty else { return faqs }
 
-        let searchTerms = query.lowercased().split(separator: " ").map(String.init)
-            .filter { $0.count >= 2 } // Skip single-character terms to reduce noise
-
+        let searchTerms = Self.tokenize(query)
         guard !searchTerms.isEmpty else { return faqs }
 
         let scored = faqs.map { faq -> (faq: FAQ, score: Int) in
-            let searchableText = (faq.title + " " + faq.details).lowercased()
+            let title = faq.title.lowercased()
+            let details = faq.details.lowercased()
             let score = searchTerms.reduce(0) { total, term in
-                var count = 0
-                var searchRange = searchableText.startIndex..<searchableText.endIndex
-                while let range = searchableText.range(of: term, range: searchRange) {
-                    count += 1
-                    searchRange = range.upperBound..<searchableText.endIndex
-                }
-                return total + count
+                total + title.ranges(of: term).count * 3
+                      + details.ranges(of: term).count
             }
             return (faq, score)
         }

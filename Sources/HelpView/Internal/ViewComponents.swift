@@ -502,18 +502,46 @@ struct FAQListView: View {
     }
 }
 
+// MARK: - Design Tokens
+
+/// Iridescent palette borrowed from `AppleIntelligenceLoader` so the AI accent
+/// reads as the same identity throughout the help surface.
+private enum HelpPalette {
+    static let aiGradient = LinearGradient(
+        colors: [
+            Color(red: 0.42, green: 0.58, blue: 1.00),
+            Color(red: 0.78, green: 0.46, blue: 1.00),
+            Color(red: 1.00, green: 0.46, blue: 0.78),
+            Color(red: 1.00, green: 0.62, blue: 0.42)
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    /// Hairline border that adapts to color scheme without becoming a hard line.
+    static let hairline = Color.primary.opacity(0.08)
+}
+
+/// Plain row button with a subtle press-state fill — the standard Apple feel
+/// for tappable rows inside grouped material containers.
+private struct HelpRowButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(configuration.isPressed ? Color.primary.opacity(0.05) : Color.clear)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
 // MARK: - Search Field Component
 struct SearchField: View {
     @Bindable var viewModel: FAQListViewModel
+    @FocusState private var isFocused: Bool
 
     var body: some View {
-        HStack {
-            if viewModel.isLoadingAI {
-                AppleIntelligenceMiniLoader()
-            } else {
-                Image(systemName: viewModel.isAppleIntelligenceAvailable ? "sparkles" : "magnifyingglass")
-                    .foregroundStyle(.primary)
-            }
+        HStack(spacing: 10) {
+            leadingIcon
+                .frame(width: 22, height: 22)
+                .contentTransition(.symbolEffect(.replace))
 
             TextField(
                 viewModel.isAppleIntelligenceAvailable
@@ -522,28 +550,59 @@ struct SearchField: View {
                 text: $viewModel.searchQuery
             )
             .textFieldStyle(.plain)
+            .focused($isFocused)
             .submitLabel(.search)
             .disabled(viewModel.isLoadingAI)
+            .font(.body)
             .onSubmit {
-                Task {
-                    await viewModel.performSearch()
-                }
+                Task { await viewModel.performSearch() }
             }
-            #if os(iOS) || os(visionOS)
-            if !viewModel.searchQuery.isEmpty {
+
+            if !viewModel.searchQuery.isEmpty && !viewModel.isLoadingAI {
                 Button {
                     viewModel.clearSearch()
+                    isFocused = true
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
+                        .imageScale(.medium)
+                        .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
-                .disabled(viewModel.isLoadingAI)
+                .transition(.scale.combined(with: .opacity))
             }
-            #endif
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            Capsule(style: .continuous)
+                .fill(.regularMaterial)
+        )
+        .overlay(
+            Capsule(style: .continuous)
+                .strokeBorder(
+                    isFocused ? AnyShapeStyle(HelpPalette.aiGradient.opacity(0.6))
+                              : AnyShapeStyle(HelpPalette.hairline),
+                    lineWidth: isFocused ? 1.2 : 0.8
+                )
+        )
+        .animation(.smooth(duration: 0.25), value: isFocused)
+        .animation(.smooth(duration: 0.2), value: viewModel.searchQuery.isEmpty)
         .frame(maxWidth: .infinity)
-        .padding(2.0)
+    }
+
+    @ViewBuilder
+    private var leadingIcon: some View {
+        if viewModel.isLoadingAI {
+            AppleIntelligenceMiniLoader()
+        } else if viewModel.isAppleIntelligenceAvailable {
+            Image(systemName: "sparkles")
+                .font(.body.weight(.medium))
+                .foregroundStyle(HelpPalette.aiGradient)
+        } else {
+            Image(systemName: "magnifyingglass")
+                .font(.body.weight(.medium))
+                .foregroundStyle(.secondary)
+        }
     }
 }
 
@@ -553,53 +612,111 @@ struct AIResponseView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 24) {
                 if viewModel.isLoadingAI {
-                    VStack(spacing: 20) {
-                        AppleIntelligenceLoader()
-
-                        Text("ai.thinking", bundle: .module)
-                            .font(.body)
-                            .foregroundStyle(.primary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 40)
+                    loadingState
                 } else {
-                    // AI Answer
-                    VStack(alignment: .leading, spacing: 8) {
-                        MarkdownTextView(markdown: viewModel.aiResponse)
-                    }
-
-                    // Related FAQs
+                    answerCard
                     if !viewModel.relatedFAQs.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("ai.relatedQuestions", bundle: .module)
-                                .font(.body.weight(.bold))
-                                .foregroundStyle(.primary)
-                                .padding(.top, 8)
-
-                            ForEach(viewModel.relatedFAQs) { faq in
-                                RelatedFAQCard(faq: faq, viewModel: viewModel)
-                            }
-                        }
-                        .padding(.top, 8)
+                        relatedSection
                     }
-
-                    Button {
-                        viewModel.clearSearch()
-                    } label: {
-                        Label {
-                            Text("browse.allFAQs", bundle: .module)
-                        } icon: {
-                            Image(systemName: "list.bullet")
-                        }
-                    }
-                    .buttonStyle(.bordered)
+                    backButton
                 }
             }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 32)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
         }
+    }
+
+    private var loadingState: some View {
+        VStack(spacing: 24) {
+            AppleIntelligenceLoader()
+            Text("ai.thinking", bundle: .module)
+                .font(.body)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 56)
+    }
+
+    private var answerCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 8) {
+                Image(systemName: "sparkles")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(HelpPalette.aiGradient)
+                Text(verbatim: "Apple Intelligence")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(HelpPalette.aiGradient)
+                    .tracking(0.3)
+            }
+
+            MarkdownTextView(markdown: viewModel.aiResponse)
+                .font(.body)
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(.regularMaterial)
+        )
+        .overlay(alignment: .top) {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(HelpPalette.aiGradient.opacity(0.35), lineWidth: 1)
+                .blur(radius: 0.5)
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(HelpPalette.hairline, lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.04), radius: 20, x: 0, y: 8)
+    }
+
+    private var relatedSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("ai.relatedQuestions", bundle: .module)
+                .font(.subheadline.weight(.semibold))
+                .fontDesign(.rounded)
+                .foregroundStyle(.secondary)
+                .padding(.leading, 4)
+
+            VStack(spacing: 0) {
+                ForEach(Array(viewModel.relatedFAQs.enumerated()), id: \.element.id) { index, faq in
+                    RelatedFAQCard(faq: faq, viewModel: viewModel)
+                    if index < viewModel.relatedFAQs.count - 1 {
+                        Divider()
+                            .background(HelpPalette.hairline)
+                            .padding(.leading, 20)
+                    }
+                }
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(.regularMaterial)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(HelpPalette.hairline, lineWidth: 0.5)
+            )
+        }
+    }
+
+    private var backButton: some View {
+        Button {
+            viewModel.clearSearch()
+        } label: {
+            Label {
+                Text("browse.allFAQs", bundle: .module)
+            } icon: {
+                Image(systemName: "list.bullet")
+            }
+            .font(.subheadline.weight(.medium))
+        }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .controlSize(.regular)
     }
 }
 
@@ -611,35 +728,35 @@ struct RelatedFAQCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button {
-                withAnimation(.snappy) {
+                withAnimation {
                     viewModel.toggleFAQ(faq.id)
                 }
             } label: {
-                HStack {
-                    Image(systemName: viewModel.isFAQExpanded(faq.id) ? "chevron.up" : "chevron.down")
-                        .foregroundStyle(.primary)
-                        .imageScale(.small)
+                HStack(spacing: 12) {
                     Text(faq.title)
-                        .font(.body.weight(.bold))
+                        .font(.body.weight(.medium))
                         .foregroundStyle(.primary)
+                        .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                        .rotationEffect(.degrees(viewModel.isFAQExpanded(faq.id) ? 90 : 0))
                 }
-                .padding()
+                .padding(.horizontal, 18)
+                .padding(.vertical, 14)
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(HelpRowButtonStyle())
             .accessibilityLabel(Text(viewModel.isFAQExpanded(faq.id) ? "Collapse \(faq.title)" : "Expand \(faq.title)"))
 
             if viewModel.isFAQExpanded(faq.id) {
                 MarkdownTextView(markdown: faq.details)
+                    .padding(.horizontal, 18)
+                    .padding(.bottom, 16)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
-                    .padding(.bottom)
             }
-
-            Divider()
-                .padding(.leading)
         }
     }
 }
@@ -650,12 +767,46 @@ struct FAQListScrollView: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
+            LazyVStack(alignment: .leading, spacing: 28) {
                 ForEach(viewModel.filteredTopics) { topic in
                     TopicSection(topic: topic, viewModel: viewModel)
                 }
+
+                if viewModel.filteredTopics.isEmpty && !viewModel.searchQuery.isEmpty {
+                    EmptyResultsView(query: viewModel.searchQuery)
+                        .padding(.top, 60)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 32)
+        }
+    }
+}
+
+// MARK: - Empty Results
+struct EmptyResultsView: View {
+    let query: String
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 36, weight: .light))
+                .foregroundStyle(.tertiary)
+                .symbolRenderingMode(.hierarchical)
+
+            VStack(spacing: 4) {
+                Text("search.noResults.title", bundle: .module)
+                    .font(.headline)
+                    .fontDesign(.rounded)
+                Text("search.noResults.subtitle", bundle: .module)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
             }
         }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 32)
     }
 }
 
@@ -665,18 +816,31 @@ struct TopicSection: View {
     @Bindable var viewModel: FAQListViewModel
 
     var body: some View {
-        Section {
-            ForEach(topic.faqs) { faq in
-                FAQRow(faq: faq, viewModel: viewModel)
-            }
-        } header: {
+        VStack(alignment: .leading, spacing: 10) {
             Text(topic.title)
-                .font(.title2)
+                .font(.title3.weight(.semibold))
+                .fontDesign(.rounded)
                 .foregroundStyle(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal)
-                .padding(.top, 20)
-                .padding(.bottom, 8)
+                .padding(.leading, 4)
+
+            VStack(spacing: 0) {
+                ForEach(Array(topic.faqs.enumerated()), id: \.element.id) { index, faq in
+                    FAQRow(faq: faq, viewModel: viewModel)
+                    if index < topic.faqs.count - 1 {
+                        Divider()
+                            .background(HelpPalette.hairline)
+                            .padding(.leading, 20)
+                    }
+                }
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(.regularMaterial)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(HelpPalette.hairline, lineWidth: 0.5)
+            )
         }
     }
 }
@@ -689,35 +853,41 @@ struct FAQRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button {
-                withAnimation(.snappy) {
+                withAnimation {
                     viewModel.toggleFAQ(faq.id)
                 }
             } label: {
-                HStack {
-                    Image(systemName: viewModel.isFAQExpanded(faq.id) ? "chevron.up" : "chevron.down")
-                        .foregroundStyle(.primary)
-                        .imageScale(.small)
+                HStack(spacing: 12) {
                     Text(faq.title)
-                        .font(.headline)
+                        .font(.body.weight(.medium))
                         .foregroundStyle(.primary)
+                        .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                        .rotationEffect(.degrees(viewModel.isFAQExpanded(faq.id) ? 90 : 0))
                 }
-                .padding()
+                .padding(.horizontal, 18)
+                .padding(.vertical, 16)
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(HelpRowButtonStyle())
             .accessibilityLabel(Text(viewModel.isFAQExpanded(faq.id) ? "Collapse \(faq.title)" : "Expand \(faq.title)"))
 
             if viewModel.isFAQExpanded(faq.id) {
-                MarkdownTextView(markdown: faq.details)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
-                    .padding(.bottom)
-            }
+                VStack(alignment: .leading, spacing: 0) {
+                    Divider()
+                        .background(HelpPalette.hairline)
+                        .padding(.leading, 18)
 
-            Divider()
-                .padding(.leading)
+                    MarkdownTextView(markdown: faq.details)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
         }
     }
 }
