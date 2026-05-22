@@ -19,12 +19,12 @@ class FAQListViewModel {
 
     var isAppleIntelligenceAvailable: Bool { aiHelper.isAppleIntelligenceAvailable }
 
-    func configure(with faqs: [FAQ], topicOrder: [String]? = nil, localization: String = "Localizable") {
+    func configure(with faqs: [FAQ], topicOrder: [String]? = nil, localization: String = "Localizable", appContext: String? = nil) {
         self.topicOrder = topicOrder
         self.localization = localization
         self.topics = FAQLoader.organizeIntoTopics(faqs, topicOrder: topicOrder, localization: localization)
         self.filteredTopics = topics
-        aiHelper.configure(with: faqs)
+        aiHelper.configure(with: faqs, appContext: appContext)
     }
 
     func toggleFAQ(_ faqID: UUID) {

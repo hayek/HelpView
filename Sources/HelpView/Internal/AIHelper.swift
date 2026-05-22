@@ -39,6 +39,7 @@ class AIHelper {
     }
 
     private var faqs: [FAQ] = []
+    private var appContext: String?
 
     /// Maximum number of full FAQ Q+A entries to include in the prompt per query.
     /// Apple's on-device SystemLanguageModel has a ~4096-token context window,
@@ -49,8 +50,18 @@ class AIHelper {
     /// pathologically long FAQ blowing the context window.
     private static let maxDetailsCharacters = 1200
 
-    func configure(with faqs: [FAQ]) {
+    /// Hard cap on app context characters to protect the context window.
+    private static let maxAppContextCharacters = 600
+
+    func configure(with faqs: [FAQ], appContext: String? = nil) {
         self.faqs = faqs
+        if let appContext, !appContext.isEmpty {
+            self.appContext = appContext.count > Self.maxAppContextCharacters
+                ? String(appContext.prefix(Self.maxAppContextCharacters)) + "…"
+                : appContext
+        } else {
+            self.appContext = nil
+        }
     }
 
     /// Builds a per-query system prompt containing only the FAQs most relevant
@@ -68,24 +79,36 @@ class AIHelper {
 
         let allTitles = faqs.map { "- \($0.title)" }.joined(separator: "\n")
 
-        return """
-        You are a strict FAQ assistant. You may ONLY answer questions using the FAQ information provided below.
+        let appContextSection: String
+        if let appContext {
+            appContextSection = """
+            About this app (use this to interpret what the user is asking about):
+            \(appContext)
 
-        CRITICAL RULES:
-        - ONLY use information from the FAQs below
-        - If the question is not related to any FAQ topic, respond with: "I can only answer questions about the topics covered in our FAQs."
-        - Do NOT use any external knowledge
-        - Do NOT answer general knowledge questions
-        - Do NOT make up information
-        - Always include 2-4 related FAQ questions the user might find helpful, drawn from the full title list
+
+            """
+        } else {
+            appContextSection = ""
+        }
+
+        return """
+        You are an FAQ assistant for this app. The user is asking a question about this app, and you must answer using ONLY the FAQ information provided below.
+
+        \(appContextSection)HOW TO ANSWER:
+        - Interpret the user's question in the context of this app, even if it is vague, short, or phrased informally (e.g. "it's not working", "how do I…", "broken", a single noun like "widget"). Map it to the most likely FAQ topic from the relevant FAQs below and answer from that.
+        - Build the answer ONLY from the FAQ information below. Do not use outside knowledge or invent details.
+        - If multiple FAQs partly apply, combine them concisely.
+        - Always include 2-4 related FAQ titles drawn from the full title list, choosing ones most relevant to the user's question (not random ones).
+
+        WHEN TO REFUSE:
+        - Only refuse if the question is clearly unrelated to this app (e.g. general knowledge, other products, off-topic chit-chat).
+        - When refusing, respond with: "I can only answer questions about the topics covered in our FAQs." — and still suggest the 2-4 most relevant related FAQ titles.
 
         Most relevant FAQs (use these to answer):
         \(faqContext)
 
         All available FAQ titles (use these for the related suggestions field):
         \(allTitles)
-
-        Remember: You must REFUSE to answer anything not covered in the FAQs above.
         """
     }
 
@@ -118,10 +141,21 @@ class AIHelper {
                 )
 
                 // Find the actual FAQ objects that match the related titles
-                let relatedFAQs = response.content.relatedFAQs.compactMap { relatedTitle in
+                var relatedFAQs = response.content.relatedFAQs.compactMap { relatedTitle in
                     faqs.first { faq in
                         faq.title.lowercased().contains(relatedTitle.lowercased()) ||
                         relatedTitle.lowercased().contains(faq.title.lowercased())
+                    }
+                }
+
+                // Model's related-FAQ picks are unreliable, especially when it returns
+                // a refusal answer. Top up with deterministic search matches so the
+                // user always sees the most relevant FAQs in the related panel.
+                if relatedFAQs.count < 4 {
+                    let searchMatches = searchFAQs(query: userQuery)
+                    for faq in searchMatches where !relatedFAQs.contains(where: { $0.id == faq.id }) {
+                        relatedFAQs.append(faq)
+                        if relatedFAQs.count >= 4 { break }
                     }
                 }
 

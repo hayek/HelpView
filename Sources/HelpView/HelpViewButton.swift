@@ -68,6 +68,7 @@ public struct HelpViewButton: View {
     private let filename: String
     private let bundle: Bundle
     private let localization: String
+    private let appContext: String?
     @State private var showingHelp = false
 
     /// Creates a help button that presents FAQs in a modal sheet.
@@ -83,6 +84,9 @@ public struct HelpViewButton: View {
     ///     Use this when the FAQ file is in an app extension or framework bundle.
     ///   - localization: The name of the `.xcstrings` file for translations (without extension).
     ///     Defaults to `"Localizable"`. Use this to specify a custom string catalog for FAQ translations.
+    ///   - appContext: Optional short description of the host app, fed into the AI search system prompt
+    ///     so the model can interpret vague or informal user queries (e.g. "it's not working") in the
+    ///     context of this specific app. Kept short — capped at ~600 characters internally.
     ///
     /// ## Example
     ///
@@ -95,11 +99,18 @@ public struct HelpViewButton: View {
     ///
     /// // Specifying a custom bundle
     /// HelpViewButton(named: "app_help", bundle: .myExtensionBundle)
+    ///
+    /// // Providing app context for AI search
+    /// HelpViewButton(
+    ///     named: "app_help",
+    ///     appContext: "Acme Notes — a markdown note-taking app for macOS and iOS."
+    /// )
     /// ```
-    public init(named filename: String, bundle: Bundle = .main, localization: String = "Localizable") {
+    public init(named filename: String, bundle: Bundle = .main, localization: String = "Localizable", appContext: String? = nil) {
         self.filename = filename
         self.bundle = bundle
         self.localization = localization
+        self.appContext = appContext
     }
 
     public var body: some View {
@@ -111,7 +122,7 @@ public struct HelpViewButton: View {
         }
         .accessibilityLabel(Text("help.accessibilityLabel", bundle: .module))
         .sheet(isPresented: $showingHelp) {
-            FAQListView(filename: filename, bundle: bundle, localization: localization)
+            FAQListView(filename: filename, bundle: bundle, localization: localization, appContext: appContext)
         }
     }
 }

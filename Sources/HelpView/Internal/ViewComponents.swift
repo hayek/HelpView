@@ -455,13 +455,14 @@ struct FAQListView: View {
     let filename: String
     let bundle: Bundle
     let localization: String
+    let appContext: String?
 
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
             ZStack(alignment: .topTrailing) {
-                HelpContentView(named: filename, bundle: bundle, localization: localization)
+                HelpContentView(named: filename, bundle: bundle, localization: localization, appContext: appContext)
                 #if os(iOS) || os(visionOS)
                     .toolbar {
                         ToolbarItem(placement: .primaryAction) {

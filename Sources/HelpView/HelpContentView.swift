@@ -124,6 +124,7 @@ public struct HelpContentView: View {
     private let filename: String
     private let bundle: Bundle
     private let localization: String
+    private let appContext: String?
 
     /// Creates an embeddable help content view for custom navigation flows.
     ///
@@ -139,6 +140,9 @@ public struct HelpContentView: View {
     ///     Use this when the FAQ file is in an app extension or framework bundle.
     ///   - localization: The name of the `.xcstrings` file for translations (without extension).
     ///     Defaults to `"Localizable"`. Use this to specify a custom string catalog for FAQ translations.
+    ///   - appContext: Optional short description of the host app, fed into the AI search system prompt
+    ///     so the model can interpret vague or informal user queries (e.g. "it's not working") in the
+    ///     context of this specific app. Kept short — capped at ~600 characters internally.
     ///
     /// ## Example
     ///
@@ -151,6 +155,12 @@ public struct HelpContentView: View {
     ///
     /// // Specifying a custom bundle (e.g., for app extensions)
     /// HelpContentView(named: "app_help", bundle: .myExtensionBundle)
+    ///
+    /// // Providing app context for AI search
+    /// HelpContentView(
+    ///     named: "app_help",
+    ///     appContext: "Acme Notes — a markdown note-taking app for macOS and iOS."
+    /// )
     /// ```
     ///
     /// ## Notes
@@ -158,10 +168,11 @@ public struct HelpContentView: View {
     /// - The view automatically loads FAQ data when it appears
     /// - Search field placement adapts to the platform (toolbar on iOS, bottom on macOS)
     /// - AI features activate automatically when Apple Intelligence is available
-    public init(named filename: String, bundle: Bundle = .main, localization: String = "Localizable") {
+    public init(named filename: String, bundle: Bundle = .main, localization: String = "Localizable", appContext: String? = nil) {
         self.filename = filename
         self.bundle = bundle
         self.localization = localization
+        self.appContext = appContext
     }
 
     public var body: some View {
@@ -190,7 +201,7 @@ public struct HelpContentView: View {
         #endif
         .onAppear {
             let (faqs, topicOrder) = FAQLoader.load(named: filename, bundle: bundle, localization: localization)
-            viewModel.configure(with: faqs, topicOrder: topicOrder, localization: localization)
+            viewModel.configure(with: faqs, topicOrder: topicOrder, localization: localization, appContext: appContext)
         }
     }
 
